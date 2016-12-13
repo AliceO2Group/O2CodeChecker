@@ -24,19 +24,18 @@ void MemberNamesCheck::registerMatchers(MatchFinder *Finder) {
 
 void MemberNamesCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl = Result.Nodes.getNodeAs<FieldDecl>("field_decl1");
-  if(MatchedDecl)
-    {
-      // check that we are inside the AliceO2 namespace to exlude system stuff
-      if ( MatchedDecl->getQualifiedNameAsString().find("AliceO2::") == std::string::npos )
-       return;
+  if(MatchedDecl) {
+    // check that we are inside the AliceO2 namespace to exlude system stuff
+    if ( MatchedDecl->getQualifiedNameAsString().find("AliceO2::") != 0 )
+     return;
 
-     if (MatchedDecl->getName().startswith("m")){
-       return;
-     }
-     diag(MatchedDecl->getLocation(), "field declaration %0 does not match naming rule", DiagnosticIDs::Error)
-    << MatchedDecl;
-  //  << FixItHint::CreateInsertion(MatchedDecl->getLocation(), "f");
+    if (MatchedDecl->getName().startswith("m")){
+     return;
     }
+    diag(MatchedDecl->getLocation(), "field declaration %0 does not match naming rule", DiagnosticIDs::Error)
+    << MatchedDecl;
+    //  << FixItHint::CreateInsertion(MatchedDecl->getLocation(), "f");
+  }
 }
 
 } // namespace aliceO2
