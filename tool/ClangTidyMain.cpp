@@ -416,7 +416,8 @@ static int clangTidyMain(int argc, const char **argv) {
     return WErrorCount;
   }
 
-  return 0;
+  // return error code when errors found
+  return Errors.size();
 }
 
 // This anchor is used to force the linker to link the CERTModule.
