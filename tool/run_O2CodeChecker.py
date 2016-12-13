@@ -108,8 +108,8 @@ def main():
                                    'clang-tidy and clang-apply-replacements in '
                                    '$PATH.')
   parser.add_argument('-clang-tidy-binary', metavar='PATH',
-                      default='clang-tidy',
-                      help='path to clang-tidy binary')
+                      default='O2CodeChecker',
+                      help='path to O2CodeChecker binary')
   parser.add_argument('-clang-apply-replacements-binary', metavar='PATH',
                       default='clang-apply-replacements',
                       help='path to clang-apply-replacements binary')
