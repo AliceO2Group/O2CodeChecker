@@ -34,3 +34,7 @@ install(TARGETS O2codecheck
 
 #install(PROGRAMS clang-tidy-diff.py DESTINATION share/clang)
 install(PROGRAMS run_O2CodeChecker.py DESTINATION bin)
+
+# we need to install the builtin headers in a path which is searched by the tool
+# FIXME: a soft link would be better
+install(DIRECTORY ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION}/include DESTINATION lib/clang/${LLVM_PACKAGE_VERSION})
