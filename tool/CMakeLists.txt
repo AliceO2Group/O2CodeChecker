@@ -33,4 +33,4 @@ install(TARGETS O2codecheck
   RUNTIME DESTINATION bin)
 
 #install(PROGRAMS clang-tidy-diff.py DESTINATION share/clang)
-#install(PROGRAMS run-clang-tidy.py DESTINATION share/clang)
+install(PROGRAMS run_O2CodeChecker.py DESTINATION bin)
