@@ -465,10 +465,15 @@ extern volatile int ReadabilityModuleAnchorSource;
 static int LLVM_ATTRIBUTE_UNUSED ReadabilityModuleAnchorDestination =
     ReadabilityModuleAnchorSource;
 
-// This anchor is used to force the linker to link the ReadabilityModule.
+// This anchor is used to force the linker to link the AliceO2Module.
 extern volatile int AliceO2ModuleAnchorSource;
 static int LLVM_ATTRIBUTE_UNUSED AliceO2ModuleAnchorDestination =
     AliceO2ModuleAnchorSource;
+
+// This anchor is used to force the linker to link the ReportingModule.
+extern volatile int ReportingModuleAnchorSource;
+static int LLVM_ATTRIBUTE_UNUSED ReportingModuleAnchorDestination =
+    ReportingModuleAnchorSource;
 
 } // namespace tidy
 } // namespace clang

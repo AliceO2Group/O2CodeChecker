@@ -14,6 +14,7 @@ target_link_libraries(O2codecheck
 
   # link our own checks
   clangTidyAliceO2Module
+  clangTidyReportingModule
 
   # include checkers available from main clang-tidy
   clangTidyBoostModule

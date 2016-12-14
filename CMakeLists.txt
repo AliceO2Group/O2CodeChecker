@@ -35,6 +35,8 @@ add_subdirectory(tool)
 
 # the specific aliceO2 checker code
 add_subdirectory(aliceO2)
+# the specific reporting tools code
+add_subdirectory(reporting)
 
 
 endif()
