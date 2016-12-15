@@ -59,7 +59,7 @@ def find_compilation_database(path):
 
 
 def get_tidy_invocation(f, clang_tidy_binary, checks, tmpdir, build_path,
-                        header_filter):
+                        header_filter, config):
   """Gets a command line for clang-tidy."""
   start = [clang_tidy_binary]
   if header_filter is not None:
@@ -69,6 +69,8 @@ def get_tidy_invocation(f, clang_tidy_binary, checks, tmpdir, build_path,
     start.append('-header-filter=^' + build_path + '/.*')
   if checks:
     start.append('-checks=' + checks)
+  if config:
+    start.append('-config=' + config)
   if tmpdir is not None:
     start.append('-export-fixes')
     # Get a temporary file. We immediately close the handle so clang-tidy can
@@ -96,7 +98,7 @@ def run_tidy(args, tmpdir, build_path, queue):
   while True:
     name = queue.get()
     invocation = get_tidy_invocation(name, args.clang_tidy_binary, args.checks,
-                                     tmpdir, build_path, args.header_filter)
+                                     tmpdir, build_path, args.header_filter, args.config)
     sys.stdout.write(' '.join(invocation) + '\n')
     subprocess.call(invocation)
     queue.task_done()
@@ -116,6 +118,9 @@ def main():
   parser.add_argument('-checks', default=None,
                       help='checks filter, when not specified, use clang-tidy '
                       'default')
+  parser.add_argument('-config', default=None,
+                       help='config option for check , when not specified, use clang-tidy '
+                       'default')
   parser.add_argument('-header-filter', default=None,
                       help='regular expression matching the names of the '
                       'headers to output diagnostics from. Diagnostics from '
@@ -143,6 +148,8 @@ def main():
   try:
     invocation = [args.clang_tidy_binary, '-list-checks']
     invocation.append('-p=' + build_path)
+    if args.config:
+      invocation.append('-config=' + args.config)
     if args.checks:
       invocation.append('-checks=' + args.checks)
     invocation.append('-')
