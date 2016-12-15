@@ -23,10 +23,10 @@ class InterfaceLister : public ClangTidyCheck {
 private:
   const std::string ClassName; // the class name for which we want to find
                          // used interfaces
-
+  ClangTidyContext * MyContext;
 public:
   InterfaceLister(StringRef Name, ClangTidyContext *Context)
-      : ClangTidyCheck(Name, Context), ClassName(Options.get("ClassName", "")) {}
+      : ClangTidyCheck(Name, Context), ClassName(Options.get("ClassName", "")), MyContext(Context) {}
 
   void storeOptions(ClangTidyOptions::OptionMap &Opts) override {
     Options.store(Opts, "ClassName", ClassName);

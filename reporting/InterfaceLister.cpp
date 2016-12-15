@@ -23,13 +23,21 @@ void InterfaceLister::registerMatchers(MatchFinder *Finder) {
 }
 
 void InterfaceLister::check(const MatchFinder::MatchResult &Result) {
-  const auto *MatchedCallExpr = Result.Nodes.getNodeAs<CXXMemberCallExpr>("member");
-  if(MatchedCallExpr)
-  {
-    if (std::strcmp(MatchedCallExpr->getRecordDecl()->getDeclName().getAsString().c_str(), ClassName.c_str()) != 0)
+  const auto *MatchedCallExpr =
+      Result.Nodes.getNodeAs<CXXMemberCallExpr>("member");
+  if (MatchedCallExpr) {
+    if (std::strcmp(MatchedCallExpr->getRecordDecl()
+                        ->getDeclName()
+                        .getAsString()
+                        .c_str(),
+                    ClassName.c_str()) != 0)
       return;
 
-    std::cerr << ClassName << " : " << MatchedCallExpr->getMethodDecl()->getQualifiedNameAsString() << "\n";
+    std::string sourceInfo(MatchedCallExpr->getExprLoc().printToString(
+        MyContext->getSourceManager()));
+    std::cerr << sourceInfo << " ; " << ClassName << " : "
+              << MatchedCallExpr->getMethodDecl()->getQualifiedNameAsString()
+              << "\n";
   }
 }
 
