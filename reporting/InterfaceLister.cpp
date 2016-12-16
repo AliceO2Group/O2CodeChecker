@@ -41,6 +41,6 @@ void InterfaceLister::check(const MatchFinder::MatchResult &Result) {
   }
 }
 
-} // namespace aliceO2
+} // namespace reporting
 } // namespace tidy
 } // namespace clang

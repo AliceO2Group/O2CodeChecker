@@ -11,6 +11,7 @@
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
 #include "InterfaceLister.h"
+#include "VirtFuncLister.h"
 
 namespace clang {
 namespace tidy {
@@ -20,6 +21,8 @@ class ReportingModule : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
     CheckFactories.registerCheck<InterfaceLister>("Reporting-interfaces-used");
+
+    CheckFactories.registerCheck<VirtFuncLister>("Reporting-unusedvirtfunc");
   }
 };
 
