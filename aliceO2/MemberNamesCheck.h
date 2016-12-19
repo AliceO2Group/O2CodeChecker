@@ -11,21 +11,29 @@
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_ALICEO2_MEMBER_NAMES_H
 
 #include "../ClangTidy.h"
+#include <regex>
 
 namespace clang {
 namespace tidy {
 namespace aliceO2 {
 
-/// FIXME: Write a short description.
+/// Checking the class member naming convention
 ///
-/// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/aliceO2-member-names.html
 class MemberNamesCheck : public ClangTidyCheck {
+private:
+  const std::string Pattern; // the regular expression string
+  const std::regex Regex; // the regular expression class
 public:
   MemberNamesCheck(StringRef Name, ClangTidyContext *Context)
-      : ClangTidyCheck(Name, Context) {}
+      : ClangTidyCheck(Name, Context), Pattern(Options.get("Pattern","m[A-Z].*")), Regex(Pattern)
+  {}
+
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
+
+  void storeOptions(ClangTidyOptions::OptionMap &Opts) override {
+    Options.store(Opts, "Pattern", Pattern);
+  }
 };
 
 } // namespace aliceO2

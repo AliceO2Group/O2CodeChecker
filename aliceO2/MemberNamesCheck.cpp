@@ -11,6 +11,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include <iostream>
+#include <regex>
 
 using namespace clang::ast_matchers;
 
@@ -24,17 +25,20 @@ void MemberNamesCheck::registerMatchers(MatchFinder *Finder) {
 
 void MemberNamesCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedDecl = Result.Nodes.getNodeAs<FieldDecl>("field_decl1");
-  if(MatchedDecl) {
+  if (MatchedDecl) {
     // check that we are inside the AliceO2 namespace to exlude system stuff
-    if ( MatchedDecl->getQualifiedNameAsString().find("AliceO2::") != 0 )
-     return;
+    // FIXME: needs to be configurable
+    if (MatchedDecl->getQualifiedNameAsString().find("AliceO2::") != 0)
+      return;
 
-    if (MatchedDecl->getName().startswith("m")){
-     return;
+    if (std::regex_match(MatchedDecl->getNameAsString(), Regex)) {
+      return;
     }
-    diag(MatchedDecl->getLocation(), "field declaration %0 does not match naming rule", DiagnosticIDs::Error)
-    << MatchedDecl;
-    //  << FixItHint::CreateInsertion(MatchedDecl->getLocation(), "f");
+
+    diag(MatchedDecl->getLocation(),
+         "field declaration %0 does not match naming rule",
+         DiagnosticIDs::Error)
+        << MatchedDecl;
   }
 }
 

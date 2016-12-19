@@ -12,7 +12,12 @@ namespace AliceO2 {
 
   class B {
   public:
-    void foo();
+    virtual void foo();
+  };
+
+  class D : public B {
+  public:
+    virtual void foo();
   };
 
   void consumer(A &a, B &b, C &c){

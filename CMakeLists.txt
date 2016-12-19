@@ -1,4 +1,12 @@
 cmake_minimum_required(VERSION 3.4.3)
+enable_testing()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # require at least gcc 4.9 !!
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+    message(FATAL_ERROR "GCC version must be at least 4.9!")
+  endif()
+endif()
 
 
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
@@ -38,5 +46,8 @@ add_subdirectory(aliceO2)
 # the specific reporting tools code
 add_subdirectory(reporting)
 
+
+# for testing
+add_subdirectory(test)
 
 endif()
