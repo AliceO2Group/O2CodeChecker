@@ -34,7 +34,7 @@ void InterfaceLister::check(const MatchFinder::MatchResult &Result) {
       return;
 
     std::string sourceInfo(MatchedCallExpr->getExprLoc().printToString(
-        MyContext->getSourceManager()));
+        *Result.SourceManager));
     std::cerr << sourceInfo << " ; " << ClassName << " : "
               << MatchedCallExpr->getMethodDecl()->getQualifiedNameAsString()
               << "\n";

@@ -23,6 +23,7 @@ void VirtFuncLister::registerMatchers(MatchFinder *Finder) {
 }
 
 void VirtFuncLister::check(const MatchFinder::MatchResult &Result) {
+  const auto &SM = *Result.SourceManager;
   const auto *MatchedDecl =
       Result.Nodes.getNodeAs<CXXMethodDecl>("method");
   if (MatchedDecl) {
@@ -47,7 +48,7 @@ void VirtFuncLister::check(const MatchFinder::MatchResult &Result) {
 
         if (iter == enditer) {
           SourceLocation loc = MatchedDecl->getLocStart();//getLocation();
-          loc.dump(MyContext->getSourceManager());
+          loc.dump(SM);
           llvm::errs() << "VIRTUAL-START-DECLARATION \n";
         } else {
           // otherwise find the base this is referring to
@@ -69,10 +70,10 @@ void VirtFuncLister::check(const MatchFinder::MatchResult &Result) {
             iter = (*iter)->begin_overridden_methods();
           }
           SourceLocation loc = (*lastiter)->getLocStart();//getLocation();
-          loc.dump(MyContext->getSourceManager());
+          loc.dump(SM);
           llvm::errs() << " OVERRIDEN-AT ";
           loc = MatchedDecl->getLocStart();//getLocation();
-          loc.dump(MyContext->getSourceManager());
+          loc.dump(SM);
           llvm::errs() << "\n";
         }
       }

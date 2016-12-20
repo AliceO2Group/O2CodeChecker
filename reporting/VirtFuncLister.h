@@ -20,11 +20,9 @@ namespace reporting {
 /// used in the code base
 ///
 class VirtFuncLister : public ClangTidyCheck {
-private:
-  ClangTidyContext * MyContext;
 public:
   VirtFuncLister(StringRef Name, ClangTidyContext *Context)
-      : ClangTidyCheck(Name, Context), MyContext(Context) {}
+      : ClangTidyCheck(Name, Context) {}
 
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
