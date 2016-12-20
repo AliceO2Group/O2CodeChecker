@@ -151,11 +151,6 @@ public:
   /// This is called from the \c ClangTidyCheck base class.
   void setSourceManager(SourceManager *SourceMgr);
 
-  /// \brief Allow checks to access the SourceManager directly
-  ///
-  SourceManager &getSourceManager() const { return DiagEngine->getSourceManager(); }
-
-
   /// \brief Should be called when starting to process new translation unit.
   void setCurrentFile(StringRef File);
 
