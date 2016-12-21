@@ -46,6 +46,8 @@ add_subdirectory(aliceO2)
 # the specific reporting tools code
 add_subdirectory(reporting)
 
+# plugin
+add_subdirectory(plugin)
 
 # for testing
 add_subdirectory(test)
