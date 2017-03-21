@@ -20,7 +20,9 @@ namespace tidy {
 namespace aliceO2 {
 
 void MemberNamesCheck::registerMatchers(MatchFinder *Finder) {
-  Finder->addMatcher(fieldDecl().bind("field_decl1"), this);
+  // Our policy says that only class members need to start with m, not
+  // struct members
+  Finder->addMatcher((fieldDecl(hasParent(recordDecl(isClass())))).bind("field_decl1"), this);
 }
 
 void MemberNamesCheck::check(const MatchFinder::MatchResult &Result) {
@@ -28,7 +30,9 @@ void MemberNamesCheck::check(const MatchFinder::MatchResult &Result) {
   if (MatchedDecl) {
     // check that we are inside the AliceO2 namespace to exlude system stuff
     // FIXME: needs to be configurable
-    if (MatchedDecl->getQualifiedNameAsString().find("AliceO2::") != 0)
+    // NOTE: AliceO2:: is the old one. We agreed to use o2::
+    if ((MatchedDecl->getQualifiedNameAsString().find("AliceO2::") != 0)
+        && (MatchedDecl->getQualifiedNameAsString().find("o2::") != 0))
       return;
 
     if (std::regex_match(MatchedDecl->getNameAsString(), Regex)) {
