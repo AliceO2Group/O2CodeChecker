@@ -8,6 +8,7 @@ It offers:
 # Requirements/Building
 
   * llvm + clang + clang extra tools (release 3_9) required
+    * (recommended to use `alibuild build clang` which will give you the right version)
   * build using `cmake -DLLVM_DIR=PATH_TO_LLVM_CMAKE_CONFIG -DClang_DIR=PATH_TO_CLANG_CONFIG`
 
 # Usage
