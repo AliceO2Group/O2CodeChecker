@@ -120,7 +120,7 @@ def main():
   parser.add_argument('-checks', default=None,
                       help='checks filter, when not specified, use clang-tidy '
                       'default')
-  parser.add_argument('-warnings-as-errors', default=None,
+  parser.add_argument('-warnings-as-errors', default=None, dest="warningsAsErrors",
                       help='checks which should become errors when triggered '
                       'default')
   parser.add_argument('-config', default=None,
