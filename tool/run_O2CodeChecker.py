@@ -58,7 +58,7 @@ def find_compilation_database(path):
   return os.path.realpath(result)
 
 
-def get_tidy_invocation(f, clang_tidy_binary, checks, tmpdir, build_path,
+def get_tidy_invocation(f, clang_tidy_binary, checks, warningsAsErrors, tmpdir, build_path,
                         header_filter, config):
   """Gets a command line for clang-tidy."""
   start = [clang_tidy_binary]
@@ -69,6 +69,8 @@ def get_tidy_invocation(f, clang_tidy_binary, checks, tmpdir, build_path,
     start.append('-header-filter=^' + build_path + '/.*')
   if checks:
     start.append('-checks=' + checks)
+  if warningsAsErrors:
+    start.append('-warnings-as-errors=' + warningsAsErrors)
   if config:
     start.append('-config=' + config)
   if tmpdir is not None:
@@ -97,7 +99,7 @@ def run_tidy(args, tmpdir, build_path, queue):
   """Takes filenames out of queue and runs clang-tidy on them."""
   while True:
     name = queue.get()
-    invocation = get_tidy_invocation(name, args.clang_tidy_binary, args.checks,
+    invocation = get_tidy_invocation(name, args.clang_tidy_binary, args.checks, args.warningsAsErrors,
                                      tmpdir, build_path, args.header_filter, args.config)
     sys.stdout.write(' '.join(invocation) + '\n')
     subprocess.call(invocation)
@@ -117,6 +119,9 @@ def main():
                       help='path to clang-apply-replacements binary')
   parser.add_argument('-checks', default=None,
                       help='checks filter, when not specified, use clang-tidy '
+                      'default')
+  parser.add_argument('-warnings-as-errors', default=None,
+                      help='checks which should become errors when triggered '
                       'default')
   parser.add_argument('-config', default=None,
                        help='config option for check , when not specified, use clang-tidy '
