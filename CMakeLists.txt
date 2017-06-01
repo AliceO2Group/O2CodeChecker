@@ -52,4 +52,8 @@ add_subdirectory(plugin)
 # for testing
 add_subdirectory(test)
 
+# some extra utilities
+add_subdirectory(utility)
+
+
 endif()
