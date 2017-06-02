@@ -3,12 +3,13 @@
 # A python script with the goal
 # to transform a (large) compilations database
 # to a smaller compilations database, given a list of source files
-# that have changed (currently only supporting c++ source and header files)
+# that have changed (currently only supporting c++ source and header files).
 # This should be useful to reduce the time spent in static code analysis by only
-# checking files that have changed, or are influenced by a change
+# checking files that have changed, or are influenced by a change.
 #
 # First version: Sandro Wenzel (June 2017)
 
+import argparse
 import json
 import os
 import subprocess
@@ -20,46 +21,55 @@ import multiprocessing
 import time
 import sys
 
-# this is a list of changed files we get from git (or the pull request)
-listofchangedfiles=['O2Device.cxx', 'CalDet.h', 'CalDet.cxx']
-checkall=False
+verbosity=0
+
+def parseArgs():
+    """ Setup + Parse arguments from command line; return a parse object """
+    parser = argparse.ArgumentParser(description='Runs over all entries in a '
+                                   'compilation database. Produces a filtered/thinned version of it.')
+    parser.add_argument('-j', type=int, default=0,
+                        help='Number of threads to be used for processing. In any case,'
+                              'not more that the number of available CPU threads will be used (which is the default).')
+    parser.add_argument('-use-files', default=None,
+                        help='\':\' separated file list used to thin out the database. Usually a list of header and source files.'
+                            '\n If no files are given, the default behaviour is to run over the complete database and filter out'
+                            'only ROOT dictionary files and Protobuf generated files.')
+    parser.add_argument('-exclude-files', default=None,
+                        help='A regular expression telling which files to exclude from the database. Takes precedence over \'-use-files\'.')
+    parser.add_argument('-o', default='thinned_compile_commands.json',
+                        help='Filename of output compilations database. [default: thinned_compile_commands.json]')
+    parser.add_argument('--verbose', type=int, default=0,
+                        help='Display verbose information about what is going on')
+    return parser.parse_args()
+
+def verboseLog(string, level=0):
+    global verbosity
+    if verbosity > 0:
+        print string
+
+def getListOfChangedFiles(colonseparatedfilepaths):
+    """ processes the argument '-use-files' and returns a python list of filenames """
+    return colonseparatedfilepaths.split(":")
+
+def makeInvalidClosure(args):
+    regex = None
+    if args.exclude_files:
+      regex=re.compile(args.exclude_files)
+    def f(filename):
+        return regex.match(filename) is not None if regex else None
+    return f
 
 def isHeaderFile(filename):
     # make this more general
     expression=".*\.h"
     # make this more efficient by compiling the expression
-    result=re.match(expression, filename)
-    if not result == None:
-        return True
-    return False
+    return re.match(expression, filename) is not None
     
 def isSourceFile(filename):
     # make this more general
     expression=".*\.cxx"
     # make this more efficient by compiling the expression
-    result=re.match(expression, filename)
-    if not result == None:
-        return True
-    return False
-
-def isROOTDictionaryFile(filename):
-    expression=".*G\_\_.*\.cxx"
-    # make this more efficient by compiling the expression
-    result=re.match(expression, filename)
-    if not result == None:
-        return True
-    return False
-
-def isProtoBuffFile(filename):
-    expression=".*\.pb\.cc"
-    # make this more efficient by compiling the expression
-    result=re.match(expression, filename)
-    if not result == None:
-        return True
-    return False
-
-def isInvalid(filename):
-    return isROOTDictionaryFile(filename) or isProtoBuffFile(filename)
+    return re.match(expression, filename) is not None
 
 # modifies a compilation command by appending -MM (and removing the -o flag)
 # in order to retrieve the header dependencies
@@ -84,10 +94,7 @@ def modifyCompileCommand(command):
 def matchesHeader(line, header):
     expression=".*\.h"
     # make this more efficient by compiling the expression
-    result=re.match(expression, line)
-    if not result == None:
-        return True
-    return False
+    return re.match(expression, line) is not None
     
 def queryListOfHeaders(command):
     proc=subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -99,7 +106,7 @@ def queryListOfHeaders(command):
 
 # service that processes one item in the queue
 def processItem(keepalive, changedheaderlist, queue, outqueue):
-  while len(keepalive)>0:
+    while len(keepalive) > 0:
       try:
           # this operation is blocking for at most 0.5 seconds
           # sad hack to be able to check whether we want this thread to be kept alive
@@ -111,6 +118,7 @@ def processItem(keepalive, changedheaderlist, queue, outqueue):
                   expression=".*"+header
                   matches = re.match(expression, include)
                   if not matches == None:
+                      verboseLog("Adding " + entry['file'] + " because of a dependence on a modified header")
                       outqueue.put(entry)
                       continue
 
@@ -128,9 +136,27 @@ def reportProgress(keepalive, queue, q2):
 # THE MAIN FUNCTION
 #
 def main():
+    checkall=False
+    listofchangedfiles=[]
+    args = parseArgs()
+    global verbosity
+    verbosity = args.verbose
+    if not args.use_files:
+        verboseLog("no changeset given ... putting all (modulo the exclude set)")
+        checkall=True
+    else:
+        listofchangedfiles=getListOfChangedFiles(args.use_files)
+
+    #setup the isInvalid (closure) function
+    isInvalid=makeInvalidClosure(args)
 
     #open the compilations database 
-    file=open('compile_commands.json').read()
+    try:
+        file=open('compile_commands.json').read()
+    except IOError:
+        print "Problem opening the compilation database (file not found)"
+        sys.exit(1)
+
     #convert json to dict
     data=json.loads(file);
 
@@ -143,13 +169,18 @@ def main():
         elif isSourceFile(file):
             changedsourcefilelist.append(file)
 
-    # make a queue
+    # make input/output queues for multithreaded processing
     inputqueue = Queue.Queue()
     outputqueue = Queue.Queue()
     keepAlive=['alive']
 
     # make some servicing threads
     max_task = multiprocessing.cpu_count()
+    if args.j:
+        if args.j>0:
+            max_task = max(max_task,j)
+
+    verboseLog("processing with " + str(max_task) + " threads.")
     for _ in range(max_task):
         t = threading.Thread(target=processItem, args=(keepAlive,changedheaderlist,inputqueue,outputqueue))
         t.deamon=True
@@ -162,25 +193,28 @@ def main():
 
     outputdict=[]
     #scan through compile database and filter against files
-    print "Processing " + str(len(data)) + " items "
+    verboseLog("Processing " + str(len(data)) + " items.")
     for entry in data:
         filename=entry['file']
         basename=os.path.basename(filename)
 
         # check if invalid anyway
         if (isInvalid(basename)):
+            verboseLog("Excluding " + basename + " because of exclude filter")
             continue
         
         # check if this entry is part of the changed source file list
         # if yes, continue directly
         if checkall==True or (basename in changedsourcefilelist):
+            verboseLog("Adding " + entry['file'] + " because of presence in modify list (or lack thereof)")
             outputqueue.put(entry)
             continue
-    
-        # otherwise check if this source file is influenced by some changed header file
-        # TODO: if the header does not contain a template, it might be enough
-        # to only add one single source files that depends on it????
-        inputqueue.put(entry)
+
+        if len(changedheaderlist) > 0:
+            # otherwise check if this source file is influenced by some changed header file
+            # TODO: if the header does not contain a template, it might be enough
+            # to only add one single source files that depends on it????
+            inputqueue.put(entry)
 
     # wait on the queue --> wait until queue is completely empty
     inputqueue.join()
@@ -188,12 +222,12 @@ def main():
     keepAlive[:]=[]
 
     #put outputqueue into outputdict
-    while outputqueue.qsize()>0:
+    while outputqueue.qsize() > 0:
         outputdict.append(outputqueue.get(False))
 
     # write result dictionary to json
     outjson = json.dumps(outputdict, sort_keys=True, indent=4, separators=(',', ': '))
-    with open("thinned_compile_commands.json",'w') as fp:
+    with open(args.o,'w') as fp:
         fp.write(outjson)
 
     return
