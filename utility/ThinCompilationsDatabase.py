@@ -132,6 +132,15 @@ def reportProgress(keepalive, queue, q2):
         print "output queue has size " + str(q2.qsize())
         time.sleep(1)
 
+#custom function to remove duplicates and return a new list
+#set() cannot be used since the entries are not hashable
+def removeDuplicates(inputlist):
+    outputlist=[]
+    for e in inputlist:
+        if e not in outputlist:
+            outputlist.append(e)
+    return outputlist
+
 #
 # THE MAIN FUNCTION
 #
@@ -226,7 +235,7 @@ def main():
         outputdict.append(outputqueue.get(False))
 
     # write result dictionary to json
-    outjson = json.dumps(outputdict, sort_keys=True, indent=4, separators=(',', ': '))
+    outjson = json.dumps(removeDuplicates(outputdict), sort_keys=True, indent=4, separators=(',', ': '))
     with open(args.o,'w') as fp:
         fp.write(outjson)
 
