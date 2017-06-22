@@ -141,6 +141,20 @@ def removeDuplicates(inputlist):
             outputlist.append(e)
     return outputlist
 
+
+def fileMatchesAnyInSourceFileList(filename, sourcefilelist):
+   '''returns true if any filename in sourcefilelist matches
+   filename
+
+   items in sourcefilelist will have only paths relativ (to
+   a git repository); while filename is a fully qualified path
+   '''
+   # TODO: item should be at end of filename
+   for item in sourcefilelist:
+       if item in filename:
+           return True
+   return False
+
 #
 # THE MAIN FUNCTION
 #
@@ -214,7 +228,7 @@ def main():
         
         # check if this entry is part of the changed source file list
         # if yes, continue directly
-        if checkall==True or (basename in changedsourcefilelist):
+        if checkall==True or fileMatchesAnyInSourceFileList(filename, changedsourcefilelist):
             verboseLog("Adding " + entry['file'] + " because of presence in modify list (or lack thereof)")
             outputqueue.put(entry)
             continue
