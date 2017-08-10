@@ -2,5 +2,4 @@
 add_executable(testregex testregex.cpp)
 add_test(testregexcorrect testregex)
 
-
 # correctness testing of checks

@@ -26,6 +26,7 @@ def adapt_cmake(module_path, check_name_camel):
   # Figure out whether this check already exists.
   for line in lines:
     if line.strip() == cpp_file:
+      print "cpp file already exists!", cpp_file
       return False
 
   print('Updating %s...' % filename)
@@ -191,9 +192,14 @@ def adapt_module(module_path, module, check_name, check_name_camel):
 
 # Adds a test for the check.
 def write_test(module_path, module, check_name):
+
   check_name_dashes = module + '-' + check_name
-  filename = os.path.normpath(os.path.join(module_path, '../../test/clang-tidy',
-                                           check_name_dashes + '.cpp'))
+  filepath = os.path.join(module_path, '../test/')
+  if not os.path.exists(filepath):
+    os.makedirs(filepath)
+  
+  filename = os.path.normpath(os.path.join(filepath, check_name_dashes + '.cpp'))
+  
   print('Creating %s...' % filename)
   with open(filename, 'wb') as f:
     f.write("""// RUN: %%check_clang_tidy %%s %(check_name_dashes)s %%t
@@ -215,8 +221,21 @@ void awesome_f2();
 
 # Recreates the list of checks in the docs/clang-tidy/checks directory.
 def update_checks_list(clang_tidy_path):
-  docs_dir = os.path.join(clang_tidy_path, '../docs/clang-tidy/checks')
+  docs_dir = os.path.join(clang_tidy_path, './docs/clang-tidy/checks')
   filename = os.path.normpath(os.path.join(docs_dir, 'list.rst'))
+  
+  if not os.path.exists(filename):
+    os.mknod(filename)
+    print 'Creating file ', filename
+    with open(filename, 'w') as f:
+      f.write('.. title:: clang-tidy - Clang-Tidy Checks\n')
+      f.write('\n')
+      f.write('Clang-Tidy Checks\n')
+      f.write('=========================\n')
+      f.write('\n')
+      f.write('.. toctree::\n')
+      f.write('\n')
+      
   with open(filename, 'r') as f:
     lines = f.readlines()
   doc_files = filter(lambda s: s.endswith('.rst') and s != 'list.rst',
@@ -249,8 +268,12 @@ def update_checks_list(clang_tidy_path):
 # Adds a documentation for the check.
 def write_docs(module_path, module, check_name):
   check_name_dashes = module + '-' + check_name
-  filename = os.path.normpath(os.path.join(
-      module_path, '../../docs/clang-tidy/checks/', check_name_dashes + '.rst'))
+  filepath = os.path.join(module_path, '../docs/clang-tidy/checks/')
+  filename = os.path.normpath(os.path.join(filepath, check_name_dashes + '.rst'))
+      
+  if not os.path.exists(filepath):
+    os.makedirs(filepath)
+  
   print('Creating %s...' % filename)
   with open(filename, 'wb') as f:
     f.write(""".. title:: clang-tidy - %(check_name_dashes)s
@@ -290,8 +313,12 @@ documentation files."""
   clang_tidy_path = os.path.dirname(sys.argv[0])
   module_path = os.path.join(clang_tidy_path, module)
 
+  if not os.path.exists(module_path):
+    os.makedirs(module_path)  
+
   if not adapt_cmake(module_path, check_name_camel):
     return
+    
   write_header(module_path, module, check_name, check_name_camel)
   write_implementation(module_path, module, check_name_camel)
   adapt_module(module_path, module, check_name, check_name_camel)

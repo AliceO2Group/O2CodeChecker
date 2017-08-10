@@ -11,6 +11,7 @@
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
 #include "MemberNamesCheck.h"
+#include "NamespaceNamingCheck.h"
 #include "SizeofCheck.h"
 
 namespace clang {
@@ -20,7 +21,10 @@ namespace aliceO2 {
 class AliceO2Module : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
-    CheckFactories.registerCheck<MemberNamesCheck>("aliceO2-member-name");
+    CheckFactories.registerCheck<MemberNamesCheck>(
+        "aliceO2-member-name");
+    CheckFactories.registerCheck<NamespaceNamingCheck>(
+        "aliceO2-namespace-naming");
     CheckFactories.registerCheck<SizeofCheck>(
         "aliceO2-SizeOf");
   }
