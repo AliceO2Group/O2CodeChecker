@@ -1,4 +1,4 @@
-//===--- PluginTidyModule.cpp - clang-tidy ----------------------------------===//
+//===--- AliceO2TidyModule.cpp - clang-tidy ----------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -28,12 +28,12 @@ public:
 
 } // namespace plugin
 
-// Register the PluginO2TidyModule using this statically initialized variable.
+// Register the AliceO2TidyModule using this statically initialized variable.
 static ClangTidyModuleRegistry::Add<plugin::PluginModule>
-X("pluginO2-module", "Adds PluginO2 specific checks");
+X("aliceO2-module", "Adds AliceO2 specific checks");
 
 // This anchor is used to force the linker to link in the generated object file
-// and thus register the PluginO2Module.
+// and thus register the AliceO2Module.
 volatile int PluginModuleAnchorSource = 0;
 
 } // namespace tidy
