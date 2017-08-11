@@ -20,14 +20,18 @@ namespace clang {
 namespace tidy {
 namespace aliceO2 {
 
+const std::string VALID_NAME_REGEX = "([a-z]+_)*[a-z]+";
+
 void NamespaceNamingCheck::registerMatchers(MatchFinder *Finder) {
-  auto validNameMatch = matchesName("::([a-z]+_)*[a-z]+$");
+  const auto validNameMatch = matchesName( std::string("::") + VALID_NAME_REGEX + "$" );
   
   // matches namespace declarations that have invalid name
   Finder->addMatcher(namespaceDecl( unless( validNameMatch ) ).bind("namespace-decl"), this);
   // matches usage of namespace
   Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(
     unless( validNameMatch ) )))).bind("namespace-usage"), this );
+  // matches "using namespace" declarations
+  Finder->addMatcher(usingDirectiveDecl().bind("using-namespace"), this);
 }
 
 void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
@@ -54,6 +58,23 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
     diag(MatchedNamespaceLoc->getLocalBeginLoc(), "namespace %0 does not follow the underscore convention")
         << AsNamespace
         << FixItHint::CreateReplacement(MatchedNamespaceLoc->getLocalBeginLoc(), newName);
+  }
+
+  const auto *MatchedUsingNamespace = Result.Nodes.getNodeAs<UsingDirectiveDecl>("using-namespace");
+  if( MatchedUsingNamespace )
+  {
+    std::string newName(MatchedUsingNamespace->getNominatedNamespace()->getDeclName().getAsString());
+    
+    if( std::regex_match(newName, std::regex(VALID_NAME_REGEX)) )
+    {
+      return;
+    }
+    
+    fixNamespaceName(newName);
+    
+    diag(MatchedUsingNamespace->getLocation(), "namespace %0 does not follow the underscore convention")
+        << MatchedUsingNamespace->getNominatedNamespace()
+        << FixItHint::CreateReplacement(MatchedUsingNamespace->getLocation(), newName);
   }
 }
 

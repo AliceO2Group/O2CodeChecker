@@ -1,5 +1,45 @@
 // RUN: %check_clang_tidy %s aliceO2-namespace-naming %t
 
+namespace OuterNamespaceWrong
+// CHECK-MESSAGES: :[[@LINE-1]]:11: warning: namespace 'OuterNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-FIXES: {{^}}namespace outer_namespace_wrong{{$}}
+{
+namespace InnerNamespaceWrong
+// CHECK-MESSAGES: :[[@LINE-1]]:11: warning: namespace 'InnerNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-FIXES: {{^}}namespace inner_namespace_wrong{{$}}
+{
+class InnerClass
+{
+public:
+  int a;
+};
+};
+};
+
+namespace outer_namespace_correct
+{
+namespace inner_namespace_correct
+{
+class InnerClass
+{
+public:
+  int b;
+};
+};
+};
+
+using namespace OuterNamespaceWrong::InnerNamespaceWrong;
+// CHECK-MESSAGES: :[[@LINE-1]]:17: warning: namespace 'OuterNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-MESSAGES: :[[@LINE-2]]:38: warning: namespace 'InnerNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-FIXES: {{^}}using namespace outer_namespace_wrong::inner_namespace_wrong;{{$}}
+using namespace outer_namespace_correct::inner_namespace_correct;
+
+typedef OuterNamespaceWrong::InnerNamespaceWrong::InnerClass JustInnerClass1;
+// CHECK-MESSAGES: :[[@LINE-1]]:9: warning: namespace 'OuterNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-MESSAGES: :[[@LINE-2]]:30: warning: namespace 'InnerNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-FIXES: {{^}}typedef outer_namespace_wrong::inner_namespace_wrong::InnerClass JustInnerClass1;{{$}}
+typedef outer_namespace_correct::inner_namespace_correct::InnerClass JustInnerClass2;
+
 namespace FirstNamespace
 // CHECK-MESSAGES: :[[@LINE-1]]:11: warning: namespace 'FirstNamespace' does not follow the underscore convention [aliceO2-namespace-naming]
 // CHECK-FIXES: {{^}}namespace first_namespace{{$}}
