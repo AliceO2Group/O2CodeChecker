@@ -104,10 +104,6 @@ void FirstNamespace::fooFromNamespace() // definition
 {
 }
 
-void foo() // has no parent
-{
-}
-
 void dummy1(int par1)
 {
 }
