@@ -86,6 +86,8 @@ public:
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
+  
+  void logNameError(SourceLocation Loc, std::string name);
 };
 
 } // namespace %(module)s
@@ -141,6 +143,12 @@ void %(check_name)s::check(const MatchFinder::MatchResult &Result) {
   diag(MatchedDecl->getLocation(), "function %%0 is insufficiently awesome")
       << MatchedDecl
       << FixItHint::CreateInsertion(MatchedDecl->getLocation(), "awesome_");
+}
+
+void %(check_name)s::logNameError(SourceLocation Loc, std::string errorName)
+{
+  diag(Loc, "Could not fix \'%0\'", DiagnosticIDs::Level::Error)
+      << errorName;
 }
 
 } // namespace %(module)s
