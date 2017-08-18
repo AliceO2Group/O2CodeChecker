@@ -7,3 +7,4 @@ Clang-Tidy Checks
    aliceO2-MemberNamesCheck
    aliceO2-SizeofCheck
    aliceO2-namespace-naming
+   aliceO2-type-names-naming
