@@ -11,7 +11,6 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include <regex>
-#include <string>
 #include <ctype.h>
 
 using namespace clang::ast_matchers;
