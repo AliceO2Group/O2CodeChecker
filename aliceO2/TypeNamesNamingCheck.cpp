@@ -62,19 +62,23 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
   {
     std::string oldName("");
     std::string newName("");
+    std::string qualifier("");
     const auto *RecordDeclType = static_cast<const CXXRecordDecl*>(MatchedRecordEnumDecl);
     if( RecordDeclType )
     {
       oldName = RecordDeclType->getDeclName().getAsString();
+      qualifier = RecordDeclType->getQualifiedNameAsString();
     }
     const auto *EnumDeclType = static_cast<const EnumDecl*>(MatchedRecordEnumDecl);
     if( EnumDeclType )
     {
       oldName = EnumDeclType->getDeclName().getAsString();
+      qualifier = EnumDeclType->getQualifiedNameAsString();
     }
+    qualifier = qualifier.substr(0, qualifier.size() - oldName.size());    
     newName = oldName;
     
-    bool fixed = fixName(newName);
+    bool fixed = fixName(qualifier, newName);
     if( fixed && (newName != oldName) )
     {
       diag(MatchedRecordEnumDecl->getLocation(), "typename \'%0\' does not follow the camel case naming convention")
@@ -102,7 +106,7 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     }
     else if( !fixed )
     {
-      logNameError(MatchedRecordEnumDecl->getLocation(), oldName);
+      logNameError(MatchedRecordEnumDecl->getLocation(), qualifier + oldName);
     }    
   }
 
@@ -111,13 +115,15 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
   {
     std::string oldName = MatchedTypedefDecl->getDeclName().getAsString();
     std::string newName = oldName;
+    std::string qualifier = MatchedTypedefDecl->getQualifiedNameAsString();
+    qualifier = qualifier.substr(0, qualifier.size() - oldName.size());    
     
     if( std::regex_match(oldName, std::regex(VALID_NAME_REGEX)) )
     {
       return;
     }
     
-    bool fixed = fixName(newName);
+    bool fixed = fixName(qualifier, newName);
     if( fixed && (newName != oldName) )
     {
       diag(MatchedTypedefDecl->getLocation(), "typename \'%0\' does not follow the camel case naming convention")
@@ -126,7 +132,7 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     }
     else if( !fixed )
     {
-      logNameError(MatchedTypedefDecl->getLocation(), oldName);
+      logNameError(MatchedTypedefDecl->getLocation(), qualifier + oldName);
     }
   }
   
@@ -135,8 +141,10 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
   {
     std::string oldName = MatchedUsingDecl->getNameAsString();
     std::string newName = oldName;
+    std::string qualifier = MatchedUsingDecl->getQualifiedNameAsString();
+    qualifier = qualifier.substr(0, qualifier.size() - oldName.size());    
     
-    bool fixed = fixName(newName);
+    bool fixed = fixName(qualifier, newName);
     if( fixed && (newName != oldName) )
     {
       diag(MatchedUsingDecl->getLocation(), "typename \'%0\' does not follow the camel case naming convention")
@@ -145,7 +153,7 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     }
     else if( !fixed )
     {
-      logNameError(MatchedUsingDecl->getLocation(), oldName);
+      logNameError(MatchedUsingDecl->getLocation(), qualifier + oldName);
     }
   }
   
@@ -155,8 +163,10 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     const auto Type = MatchedRecordEnumTypeLoc->getType().split().asPair().first;
     std::string oldName = Type->getAsTagDecl()->getNameAsString();    
     std::string newName = oldName;
+    std::string qualifier = Type->getAsTagDecl()->getQualifiedNameAsString();
+    qualifier = qualifier.substr(0, qualifier.size() - oldName.size());    
     
-    bool fixed = fixName(newName);
+    bool fixed = fixName(qualifier, newName);
     if( fixed && (newName != oldName) )
     {
       diag(MatchedRecordEnumTypeLoc->getBeginLoc(), "typename \'%0\' does not follow the camel case naming convention")
@@ -165,7 +175,7 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     }
     else if( !fixed )
     {
-      logNameError(MatchedRecordEnumTypeLoc->getBeginLoc(), oldName);
+      logNameError(MatchedRecordEnumTypeLoc->getBeginLoc(), qualifier + oldName);
     }
   }
 
@@ -175,8 +185,10 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     const auto Type = MatchedTypedefTypeLoc->getType();
     std::string oldName = Type->getAs<TypedefType>()->getDecl()->getNameAsString();
     std::string newName = oldName;
-    
-    bool fixed = fixName(newName);
+    std::string qualifier = Type->getAs<TypedefType>()->getDecl()->getQualifiedNameAsString();
+    qualifier = qualifier.substr(0, qualifier.size() - oldName.size());    
+
+    bool fixed = fixName(qualifier, newName);
     if( fixed && (newName != oldName) )
     {
       diag(MatchedTypedefTypeLoc->getBeginLoc(), "typename \'%0\' does not follow the camel case naming convention")
@@ -185,7 +197,7 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
     }
     else if( !fixed )
     {
-      logNameError(MatchedTypedefTypeLoc->getBeginLoc(), oldName);
+      logNameError(MatchedTypedefTypeLoc->getBeginLoc(), qualifier + oldName);
     }
   }
 }
@@ -196,9 +208,9 @@ void TypeNamesNamingCheck::check(const MatchFinder::MatchResult &Result) {
 ///
 /// return: Returns true if the input string is succesfully modified,
 ///         If neither of the modifying options succeeds false is returned.
-bool TypeNamesNamingCheck::fixName(std::string &name)
+bool TypeNamesNamingCheck::fixName(const std::string &qualifier, std::string &name)
 {
-  std::string replace_option = Options.get(name, "");
+  std::string replace_option = Options.get(qualifier + name, "");
   if( replace_option != "" )
   {
     name = replace_option;

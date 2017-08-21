@@ -27,7 +27,7 @@ public:
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
   
-  bool fixName(std::string &name);
+  bool fixName(const std::string &qualifier, std::string &name);
   void logNameError(SourceLocation Loc, std::string name);
 };
 
