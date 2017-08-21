@@ -38,12 +38,44 @@ import argparse
 import re
 import subprocess
 import sys
+import os
 
 
 def write_file(file_name, text):
   with open(file_name, 'w') as f:
     f.write(text)
     f.truncate()
+    
+def get_configs(config_folder):
+  configs = ''
+
+  for root, dirs, files in os.walk(config_folder):
+    for name in files: 
+      with open(os.path.join(root, name), 'r') as f:
+        for line in f:
+          if configs:
+            configs += ','
+          configs += line.rstrip()
+        
+  return configs
+  
+def log_error_names(clang_tidy_output, configs_dir):
+  check_error_names_set = set(())
+
+  for line in clang_tidy_output.split('\n'):
+    if ' error:' not in line:
+      continue
+
+    m = re.search('.*Could not fix \'(.+)\'.*\[(.+)\].*', line)
+    error_name = m.group(1)
+    check_name = m.group(2)
+    
+    if( (check_name, error_name) in check_error_names_set ):
+      continue
+    check_error_names_set.add((check_name, error_name))
+    
+    with open(os.path.join(configs_dir, check_name), 'a') as f:
+      f.write('{key: %s.%s, value: <provide_fix_for_key>}\n' % (check_name, error_name))
 
 def main():
   parser = argparse.ArgumentParser()
@@ -56,6 +88,7 @@ def main():
   resource_dir = args.resource_dir
   input_file_name = args.input_file_name
   check_name = args.check_name
+  configs_dir = './configs/'
 
   extension = '.cpp'
   if (input_file_name.endswith('.c')):
@@ -92,8 +125,14 @@ def main():
   original_file_name = temp_file_name + ".orig"
   write_file(original_file_name, cleaned_test)
 
-  args = ['O2codecheck', temp_file_name, '-fix', '--checks=-*,' + check_name] + \
-        clang_tidy_extra_args
+  configs = get_configs(configs_dir)
+  if configs:
+    args = ['O2codecheck', temp_file_name, '-fix', '-config={CheckOptions: ['+configs+']}', '--checks=-*,' + check_name] + \
+          clang_tidy_extra_args
+  else:
+    args = ['O2codecheck', temp_file_name, '-fix', '--checks=-*,' + check_name] + \
+          clang_tidy_extra_args
+          
   print('Running ' + repr(args) + '...')
     
   try:
@@ -101,6 +140,9 @@ def main():
         subprocess.check_output(args, stderr=subprocess.STDOUT).decode()
   except subprocess.CalledProcessError as e:
     clang_tidy_output = e.output.decode()
+    
+    
+  log_error_names(clang_tidy_output, configs_dir)
 
   try:
     diff_output = subprocess.check_output(
@@ -108,6 +150,10 @@ def main():
         stderr=subprocess.STDOUT)
   except subprocess.CalledProcessError as e:
     diff_output = e.output
+
+  if has_check_messages:
+    messages_file = temp_file_name + '.msg'
+    write_file(messages_file, clang_tidy_output)
 
   print('------------------------------ Fixes -----------------------------\n' +
         diff_output.decode() +
@@ -124,8 +170,8 @@ def main():
       raise
 
   if has_check_messages:
-    messages_file = temp_file_name + '.msg'
-    write_file(messages_file, clang_tidy_output)
+    #messages_file = temp_file_name + '.msg'
+    #write_file(messages_file, clang_tidy_output)
     try:
       subprocess.check_output(
           ['FileCheck', '-input-file=' + messages_file, input_file_name,
