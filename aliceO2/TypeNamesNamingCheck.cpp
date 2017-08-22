@@ -213,6 +213,12 @@ bool TypeNamesNamingCheck::fixName(const std::string &qualifier, std::string &na
   std::string replace_option = Options.get(qualifier + name, "");
   if( replace_option != "" )
   {
+    // default fix string
+    if( replace_option == "<provide_fix_for_key>" )
+    {
+      return false;
+    }
+    
     name = replace_option;
     return true;
   }

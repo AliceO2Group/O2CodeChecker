@@ -28,7 +28,7 @@ def log_error_names(clang_tidy_output, configs_dir):
     check_error_names_set.add((check_name, error_name))
     
     with open(os.path.join(configs_dir, check_name), 'a') as f:
-      f.write("{key: '%s.%s', value: <provide_fix_for_key>}\n" % (check_name, error_name))
+      f.write("{key: '%s.%s', value: <provide_fix_for_key>},\n" % (check_name, error_name))
       number_of_errors = number_of_errors + 1
       
   print 'Number of errors logged:', number_of_errors
