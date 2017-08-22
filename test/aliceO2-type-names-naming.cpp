@@ -20,6 +20,29 @@ class SSQ
 
 SSQ abcd;
 
+namespace first_namespace
+{
+class BBS
+// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: typename 'BBS' does not follow the camel case naming convention [aliceO2-type-names-naming]
+// CHECK-FIXES: {{^}}class bbs{{$}}
+{
+};
+}
+namespace second_namespace_legacy
+{
+class BBS
+{
+};
+}
+
+first_namespace::BBS firstVar;
+// CHECK-MESSAGES: :[[@LINE-1]]:18: warning: typename 'BBS' does not follow the camel case naming convention [aliceO2-type-names-naming]
+// CHECK-FIXES: {{^}}first_namespace::bbs firstVar;{{$}}
+second_namespace_legacy::BBS secondVar;
+
+using namespace second_namespace_legacy;
+BBS thirdVar;
+
 class abird
 // CHECK-MESSAGES: :[[@LINE-1]]:7: warning: typename 'abird' does not follow the camel case naming convention [aliceO2-type-names-naming]
 // CHECK-FIXES: {{^}}class Abird{{$}}

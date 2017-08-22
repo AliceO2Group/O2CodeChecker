@@ -59,24 +59,6 @@ def get_configs(config_folder):
         
   return configs
   
-def log_error_names(clang_tidy_output, configs_dir):
-  check_error_names_set = set(())
-
-  for line in clang_tidy_output.split('\n'):
-    if ' error:' not in line:
-      continue
-
-    m = re.search('.*Could not fix \'(.+)\'.*\[(.+)\].*', line)
-    error_name = m.group(1)
-    check_name = m.group(2)
-    
-    if( (check_name, error_name) in check_error_names_set ):
-      continue
-    check_error_names_set.add((check_name, error_name))
-    
-    with open(os.path.join(configs_dir, check_name), 'a') as f:
-      f.write('{key: %s.%s, value: <provide_fix_for_key>}\n' % (check_name, error_name))
-
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('-resource-dir')
@@ -142,8 +124,6 @@ def main():
     clang_tidy_output = e.output.decode()
     
     
-  log_error_names(clang_tidy_output, configs_dir)
-
   try:
     diff_output = subprocess.check_output(
         ['diff', '-u', original_file_name, temp_file_name],
