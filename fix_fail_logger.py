@@ -35,7 +35,9 @@ def log_error_names(clang_tidy_output, configs_dir):
 
 def main():
   configs_dir = './configs/'
-  
+  if not os.path.exists(configs_dir):
+    os.makedirs(configs_dir)
+    
   clang_tidy_output = ''
   
   for line in sys.stdin:
