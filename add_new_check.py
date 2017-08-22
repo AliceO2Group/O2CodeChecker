@@ -160,10 +160,8 @@ void %(check_name)s::logNameError(SourceLocation Loc, std::string errorName)
 
 # Modifies the module to include the new check.
 def adapt_module(module_path, module, check_name, check_name_camel):
-  print 'breh1: ',module_path
   modulecpp = filter(lambda p: p.lower() == module.lower() + 'tidymodule.cpp',
                      os.listdir(module_path))[0]
-  print 'breh: ',modulecpp
   filename = os.path.join(module_path, modulecpp)
   with open(filename, 'r') as f:
     lines = f.readlines()
