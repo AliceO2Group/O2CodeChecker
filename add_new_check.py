@@ -147,7 +147,7 @@ void %(check_name)s::check(const MatchFinder::MatchResult &Result) {
 
 void %(check_name)s::logNameError(SourceLocation Loc, std::string errorName)
 {
-  diag(Loc, "Could not fix \'%0\'", DiagnosticIDs::Level::Error)
+  diag(Loc, "Could not fix \'%%0\'", DiagnosticIDs::Level::Error)
       << errorName;
 }
 
