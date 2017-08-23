@@ -15,6 +15,7 @@
 #include "NamespaceNamingCheck.h"
 #include "SizeofCheck.h"
 #include "TypeNamesNamingCheck.h"
+#include "VariableNamingGlobalCheck.h"
 
 namespace clang {
 namespace tidy {
@@ -33,6 +34,8 @@ public:
         "aliceO2-SizeOf");
     CheckFactories.registerCheck<TypeNamesNamingCheck>(
         "aliceO2-type-names-naming");
+    CheckFactories.registerCheck<VariableNamingGlobalCheck>(
+        "aliceO2-variable-naming-global");
   }
 };
 

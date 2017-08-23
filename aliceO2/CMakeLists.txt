@@ -7,6 +7,7 @@ add_clang_library(clangTidyAliceO2Module
   NamespaceNamingCheck.cpp
   SizeofCheck.cpp
   TypeNamesNamingCheck.cpp
+  VariableNamingGlobalCheck.cpp
 
   LINK_LIBS
   clangAST

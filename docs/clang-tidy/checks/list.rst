@@ -9,3 +9,4 @@ Clang-Tidy Checks
    aliceO2-function-naming
    aliceO2-namespace-naming
    aliceO2-type-names-naming
+   aliceO2-variable-naming-global
