@@ -50,12 +50,14 @@ def main():
   parser.add_argument('-resource-dir')
   parser.add_argument('input_file_name')
   parser.add_argument('check_name')
+  parser.add_argument('checktool', nargs='?', default="O2codecheck")
 
   args, extra_args = parser.parse_known_args()
 
   resource_dir = args.resource_dir
   input_file_name = args.input_file_name
   check_name = args.check_name
+  tool = args.checktool
 
   extension = '.cpp'
   if (input_file_name.endswith('.c')):
@@ -92,7 +94,7 @@ def main():
   original_file_name = temp_file_name + ".orig"
   write_file(original_file_name, cleaned_test)
 
-  args = ['O2codecheck', temp_file_name, '-fix', '--checks=-*,' + check_name] + \
+  args = [tool, temp_file_name, '-fix', '--checks=-*,' + check_name] + \
         clang_tidy_extra_args
   print('Running ' + repr(args) + '...')
     
