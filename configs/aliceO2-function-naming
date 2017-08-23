@@ -1,0 +1,5 @@
+{key: 'aliceO2-function-naming.first_namespace::MyClass::function_second_wrong2', value: hasFunctionSecondWrong2},
+{key: 'aliceO2-function-naming.globalFunctionWrong2', value: isGlobalFunctionWrong2},
+{key: 'aliceO2-function-naming.first_namespace::globalFunctionWrong2', value: isGlobalFunctionWrong2},
+{key: 'aliceO2-function-naming.first_namespace::MyClass::functionSecondWrong', value: isFunctionSecondWrong},
+{key: 'aliceO2-function-naming.first_namespace::MyClass::functionStaticSecondWrong', value: isFunctionStaticSecondWrong},
