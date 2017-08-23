@@ -2,9 +2,12 @@ set(LLVM_LINK_COMPONENTS support)
 
 add_clang_library(clangTidyAliceO2Module
   AliceO2TidyModule.cpp
+  FunctionNamingCheck.cpp
   MemberNamesCheck.cpp
   NamespaceNamingCheck.cpp
   SizeofCheck.cpp
+  TypeNamesNamingCheck.cpp
+  VariableNamingGlobalCheck.cpp
 
   LINK_LIBS
   clangAST

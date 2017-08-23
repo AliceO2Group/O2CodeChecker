@@ -10,9 +10,12 @@
 #include "../ClangTidy.h"
 #include "../ClangTidyModule.h"
 #include "../ClangTidyModuleRegistry.h"
+#include "FunctionNamingCheck.h"
 #include "MemberNamesCheck.h"
 #include "NamespaceNamingCheck.h"
 #include "SizeofCheck.h"
+#include "TypeNamesNamingCheck.h"
+#include "VariableNamingGlobalCheck.h"
 
 namespace clang {
 namespace tidy {
@@ -21,12 +24,18 @@ namespace aliceO2 {
 class AliceO2Module : public ClangTidyModule {
 public:
   void addCheckFactories(ClangTidyCheckFactories &CheckFactories) override {
+    CheckFactories.registerCheck<FunctionNamingCheck>(
+        "aliceO2-function-naming");
     CheckFactories.registerCheck<MemberNamesCheck>(
         "aliceO2-member-name");
     CheckFactories.registerCheck<NamespaceNamingCheck>(
         "aliceO2-namespace-naming");
     CheckFactories.registerCheck<SizeofCheck>(
         "aliceO2-SizeOf");
+    CheckFactories.registerCheck<TypeNamesNamingCheck>(
+        "aliceO2-type-names-naming");
+    CheckFactories.registerCheck<VariableNamingGlobalCheck>(
+        "aliceO2-variable-naming-global");
   }
 };
 
