@@ -20,18 +20,21 @@ namespace clang {
 namespace tidy {
 namespace aliceO2 {
 
-const std::string VALID_NAME_REGEX = "([a-z]+_)*[a-z]+";
+const std::string VALID_NAME_REGEX = "[a-z][a-z_0-9]+";
 
 void NamespaceNamingCheck::registerMatchers(MatchFinder *Finder) {
   const auto validNameMatch = matchesName( std::string("::") + VALID_NAME_REGEX + "$" );
   
   // matches namespace declarations that have invalid name
-  Finder->addMatcher(namespaceDecl( unless( validNameMatch ) ).bind("namespace-decl"), this);
+  Finder->addMatcher(namespaceDecl(allOf(
+    unless(validNameMatch),
+    unless(isAnonymous())
+    )).bind("namespace-decl"), this);
   // matches usage of namespace
   Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(
     unless( validNameMatch ) )))).bind("namespace-usage"), this );
   // matches "using namespace" declarations
-  Finder->addMatcher(usingDirectiveDecl().bind("using-namespace"), this);
+  Finder->addMatcher(usingDirectiveDecl(unless(isImplicit())).bind("using-namespace"), this);
 }
 
 void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {

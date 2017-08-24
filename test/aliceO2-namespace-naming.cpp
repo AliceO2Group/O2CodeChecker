@@ -1,5 +1,22 @@
 // RUN: %check_clang_tidy %s aliceO2-namespace-naming %t
 
+namespace
+{
+namespace simple
+{
+};
+};
+
+namespace o2
+{
+}
+namespace o2codecheck
+{
+}
+namespace a_1234_5678_b
+{
+}
+
 namespace OuterNamespaceWrong
 // CHECK-MESSAGES: :[[@LINE-1]]:11: warning: namespace 'OuterNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
 // CHECK-FIXES: {{^}}namespace outer_namespace_wrong{{$}}
