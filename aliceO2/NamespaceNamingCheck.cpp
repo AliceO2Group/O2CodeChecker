@@ -27,19 +27,14 @@ void NamespaceNamingCheck::registerMatchers(MatchFinder *Finder) {
   
   // matches namespace declarations that have invalid name
   Finder->addMatcher(namespaceDecl(allOf(
-    //isExpansionInMainFile(),
     unless(validNameMatch),
     unless(isAnonymous())
     )).bind("namespace-decl"), this);
   // matches usage of namespace
-  Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(allOf(
-    unless(validNameMatch),//isExpansionInMainFile(),
-    unless(validNameMatch)
-    ))))).bind("namespace-usage"), this );
+  Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(unless(validNameMatch)
+    )))).bind("namespace-usage"), this );
   // matches "using namespace" declarations
-  Finder->addMatcher(usingDirectiveDecl(allOf(
-    unless(isImplicit()),//isExpansionInMainFile(),
-    unless(isImplicit())
+  Finder->addMatcher(usingDirectiveDecl(unless(isImplicit()
     )).bind("using-namespace"), this);
 }
 
