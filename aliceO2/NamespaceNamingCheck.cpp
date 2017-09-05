@@ -19,9 +19,9 @@ using namespace clang::ast_matchers;
 namespace clang {
 namespace tidy {
 namespace aliceO2 {
-
+ 
 const std::string VALID_NAME_REGEX = "[a-z][a-z_0-9]+";
-const std::string VALID_PATH_REGEX = "(.*/O2/.*)|(.*o2codechecker/test.*)";
+const std::string VALID_PATH_REGEX = "(.*/O2/.*)|(.*/test/.*)";
 
 bool isOutsideOfTargetScope(std::string filename)
 {
@@ -82,7 +82,7 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedUsingNamespace = Result.Nodes.getNodeAs<UsingDirectiveDecl>("using-namespace");
   if( MatchedUsingNamespace )
   {
-    if( isOutsideOfTargetScope( Result.SourceManager->getFilename(MatchedUsingNamespace->getLocation()).str() ) )
+    if( isOutsideOfTargetScope( Result.SourceManager->getFilename(MatchedUsingNamespace->getNominatedNamespace()->getLocation()).str() ) )
     {
       return;
     }

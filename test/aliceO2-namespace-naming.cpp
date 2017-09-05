@@ -23,6 +23,10 @@ namespace TPC
 {
 }
 
+using namespace TPC;
+// CHECK-MESSAGES: :[[@LINE-1]]:17: warning: namespace 'TPC' does not follow the underscore convention [aliceO2-namespace-naming]
+// CHECK-FIXES: {{^}}using namespace tpc;{{$}}
+
 namespace OuterNamespaceWrong
 // CHECK-MESSAGES: :[[@LINE-1]]:11: warning: namespace 'OuterNamespaceWrong' does not follow the underscore convention [aliceO2-namespace-naming]
 // CHECK-FIXES: {{^}}namespace outer_namespace_wrong{{$}}
