@@ -27,14 +27,20 @@ void NamespaceNamingCheck::registerMatchers(MatchFinder *Finder) {
   
   // matches namespace declarations that have invalid name
   Finder->addMatcher(namespaceDecl(allOf(
+    //isExpansionInMainFile(),
     unless(validNameMatch),
     unless(isAnonymous())
     )).bind("namespace-decl"), this);
   // matches usage of namespace
-  Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(
-    unless( validNameMatch ) )))).bind("namespace-usage"), this );
+  Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(allOf(
+    unless(validNameMatch),//isExpansionInMainFile(),
+    unless(validNameMatch)
+    ))))).bind("namespace-usage"), this );
   // matches "using namespace" declarations
-  Finder->addMatcher(usingDirectiveDecl(unless(isImplicit())).bind("using-namespace"), this);
+  Finder->addMatcher(usingDirectiveDecl(allOf(
+    unless(isImplicit()),//isExpansionInMainFile(),
+    unless(isImplicit())
+    )).bind("using-namespace"), this);
 }
 
 void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
@@ -83,6 +89,12 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
 
 void NamespaceNamingCheck::fixNamespaceName(std::string &name)
 {
+  if( std::regex_match(name, std::regex(".*[A-Z][A-Z].*")) )
+  {
+    // cannot fix consecutive capital letters
+    return;
+  }
+
   for(int i=0; i<name.size(); i++) {
     if(isupper(name[i])) {
       if(i != 0 && name[i-1] != '_') {
