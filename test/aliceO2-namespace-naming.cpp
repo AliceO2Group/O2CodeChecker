@@ -1,5 +1,8 @@
 // RUN: %check_clang_tidy %s aliceO2-namespace-naming %t
 
+namespace {}
+namespace{
+}
 namespace
 {
 namespace simple
