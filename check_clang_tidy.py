@@ -111,6 +111,10 @@ def main():
   except subprocess.CalledProcessError as e:
     diff_output = e.output
 
+  if has_check_messages:
+    messages_file = temp_file_name + '.msg'
+    write_file(messages_file, clang_tidy_output)
+
   print('------------------------------ Fixes -----------------------------\n' +
         diff_output.decode() +
         '\n------------------------------------------------------------------')
@@ -126,8 +130,6 @@ def main():
       raise
 
   if has_check_messages:
-    messages_file = temp_file_name + '.msg'
-    write_file(messages_file, clang_tidy_output)
     try:
       subprocess.check_output(
           ['FileCheck', '-input-file=' + messages_file, input_file_name,
