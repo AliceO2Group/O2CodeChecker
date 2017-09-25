@@ -22,12 +22,12 @@ namespace aliceO2 {
 /// http://clang.llvm.org/extra/clang-tidy/checks/aliceO2-namespace-naming.html
 class NamespaceNamingCheck : public ClangTidyCheck {
 public:
-  NamespaceNamingCheck(StringRef Name, ClangTidyContext *Context)
-      : ClangTidyCheck(Name, Context) {}
+  NamespaceNamingCheck(StringRef Name, ClangTidyContext *Context);
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
   
-  void fixNamespaceName(std::string &name);
+  bool fixNamespaceName(std::string &name);
+  void logNameError(SourceLocation Loc, std::string errorName);
 };
 
 } // namespace aliceO2

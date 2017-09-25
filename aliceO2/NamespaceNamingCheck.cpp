@@ -23,6 +23,20 @@ namespace aliceO2 {
 const std::string VALID_NAME_REGEX = "[a-z][a-z_0-9]+";
 const std::string VALID_PATH_REGEX = "(.*/O2/.*)|(.*/test/.*)";
 
+const std::string VALID_NAME_REGEX = "[a-z][a-z_0-9]+";
+std::string VALID_PATH_REGEX = "";
+
+NamespaceNamingCheck::NamespaceNamingCheck(StringRef Name, ClangTidyContext *Context)
+    : ClangTidyCheck(Name, Context)
+{
+  VALID_PATH_REGEX = Options.getLocalOrGlobal("CheckPathRegex","");
+	if( VALID_PATH_REGEX == "" )
+	{
+	  fprintf(stderr,"Error: User must provide a .clang-tidy file in any of the parent directories of the source files containing a key-value pair for key \'CheckPathRegex\'");
+	  exit(1);
+	}
+}
+
 bool isOutsideOfTargetScope(std::string filename)
 {
   return !std::regex_match(filename, std::regex(VALID_PATH_REGEX));
@@ -30,7 +44,7 @@ bool isOutsideOfTargetScope(std::string filename)
 
 void NamespaceNamingCheck::registerMatchers(MatchFinder *Finder) {
   const auto validNameMatch = matchesName( std::string("::") + VALID_NAME_REGEX + "$" );
-  
+
   // matches namespace declarations that have invalid name
   Finder->addMatcher(namespaceDecl(allOf(
     unless(validNameMatch),
@@ -52,16 +66,22 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
     {
       return;
     }
-  
+
     std::string newName(MatchedNamespaceDecl->getDeclName().getAsString());
-    
-    fixNamespaceName(newName);
-    
-    diag(MatchedNamespaceDecl->getLocation(), "namespace %0 does not follow the underscore convention")
+    std::string oldName=newName;
+
+    if(fixNamespaceName(newName))
+    {
+      diag(MatchedNamespaceDecl->getLocation(), "namespace %0 does not follow the underscore convention")
         << MatchedNamespaceDecl
         << FixItHint::CreateReplacement(MatchedNamespaceDecl->getLocation(), newName);
+    }
+    else
+    {
+      logNameError(MatchedNamespaceDecl->getLocation(), oldName);
+    }
   }
-  
+
   const auto *MatchedNamespaceLoc = Result.Nodes.getNodeAs<NestedNameSpecifierLoc>("namespace-usage");
   if( MatchedNamespaceLoc )
   {
@@ -71,12 +91,18 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
       return;
     }
     std::string newName(AsNamespace->getDeclName().getAsString());
-    
-    fixNamespaceName(newName);
-    
-    diag(MatchedNamespaceLoc->getLocalBeginLoc(), "namespace %0 does not follow the underscore convention")
+    std::string oldName=newName;
+
+    if(fixNamespaceName(newName))
+    {
+      diag(MatchedNamespaceLoc->getLocalBeginLoc(), "namespace %0 does not follow the underscore convention")
         << AsNamespace
         << FixItHint::CreateReplacement(MatchedNamespaceLoc->getLocalBeginLoc(), newName);
+    }
+    else
+    {
+      logNameError(MatchedNamespaceLoc->getLocalBeginLoc(), oldName);
+    }
   }
 
   const auto *MatchedUsingNamespace = Result.Nodes.getNodeAs<UsingDirectiveDecl>("using-namespace");
@@ -86,24 +112,37 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
     {
       return;
     }
-    
+
     std::string newName(MatchedUsingNamespace->getNominatedNamespace()->getDeclName().getAsString());
-    
+    std::string oldName=newName;
+
     if( std::regex_match(newName, std::regex(VALID_NAME_REGEX)) )
     {
       return;
     }
-    
-    fixNamespaceName(newName);
-    
-    diag(MatchedUsingNamespace->getLocation(), "namespace %0 does not follow the underscore convention")
+
+    if(fixNamespaceName(newName))
+    {
+      diag(MatchedUsingNamespace->getLocation(), "namespace %0 does not follow the underscore convention")
         << MatchedUsingNamespace->getNominatedNamespace()
         << FixItHint::CreateReplacement(MatchedUsingNamespace->getLocation(), newName);
+    }
+    else
+    {
+      logNameError(MatchedNamespaceDecl->getLocation(), oldName);
+    }
   }
 }
 
-void NamespaceNamingCheck::fixNamespaceName(std::string &name)
+bool NamespaceNamingCheck::fixNamespaceName(std::string &name)
 {
+  std::string replace_option = Options.get(name, "");
+  if( replace_option != "" )
+  {
+    name = replace_option;
+    return true;
+  }
+
   for(int i=name.size()-1; i>=0; i--) {
     if(isupper(name[i])) {
       if(i != 0 && islower(name[i-1])) {
@@ -113,6 +152,14 @@ void NamespaceNamingCheck::fixNamespaceName(std::string &name)
       name[i] = tolower(name[i]);
     }
   }
+
+  return std::regex_match( name, std::regex(VALID_NAME_REGEX) );
+}
+
+void NamespaceNamingCheck::logNameError(SourceLocation Loc, std::string errorName)
+{
+  diag(Loc, "Could not fix \'%0\'", DiagnosticIDs::Level::Error)
+      << errorName;
 }
 
 } // namespace aliceO2
