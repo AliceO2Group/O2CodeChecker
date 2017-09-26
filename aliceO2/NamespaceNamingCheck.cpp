@@ -29,7 +29,8 @@ NamespaceNamingCheck::NamespaceNamingCheck(StringRef Name, ClangTidyContext *Con
   VALID_PATH_REGEX = Options.getLocalOrGlobal("CheckPathRegex","");
 	if( VALID_PATH_REGEX == "" )
 	{
-	  fprintf(stderr,"Error: User must provide a .clang-tidy file in any of the parent directories of the source files containing a key-value pair for key \'CheckPathRegex\'");
+	  fprintf(stderr,"Error: User must provide a .clang-tidy file in any of the parent directories of the source files containing a key-value pair for key \'CheckPathRegex\' "
+	                        "or pass the key-value pair with the command line argument --config");
 	  exit(1);
 	}
 }
