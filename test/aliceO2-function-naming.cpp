@@ -1,5 +1,25 @@
 // RUN: %check_clang_tidy %s aliceO2-function-naming %t
 
+/**
+  For this test to pass you must create a configuration file with the content:
+
+  // CONTENT BEGIN
+  key: aliceO2-function-naming.globalFunctionWrong2
+  value: 'isGlobalFunctionWrong2'
+  key: aliceO2-function-naming.first_namespace::globalFunctionWrong2
+  value: 'isGlobalFunctionWrong2'
+  key: aliceO2-function-naming.first_namespace::MyClass::functionSecondWrong
+  value: 'isFunctionSecondWrong'
+  key: aliceO2-function-naming.first_namespace::MyClass::function_second_wrong2
+  value: 'hasFunctionSecondWrong2'
+  key: aliceO2-function-naming.first_namespace::MyClass::functionStaticSecondWrong
+  value: 'isFunctionStaticSecondWrong'
+  // CONTENT END
+
+  The file must be either the default one(specified in the check .cpp file) or specified as an option
+  to .clang-tidy file with key "CodecheckerFixesFile"
+*/
+
 void globalFunctionCorrect() {}
 bool isGlobalFunctionCorrect2() { return true; }
 

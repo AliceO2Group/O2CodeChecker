@@ -11,6 +11,7 @@
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_ALICEO2_FUNCTION_NAMING_H
 
 #include "../ClangTidy.h"
+#include "ConfigurationParser.h"
 
 namespace clang {
 namespace tidy {
@@ -22,11 +23,16 @@ namespace aliceO2 {
 /// http://clang.llvm.org/extra/clang-tidy/checks/aliceO2-function-naming.html
 class FunctionNamingCheck : public ClangTidyCheck {
 public:
-  FunctionNamingCheck(StringRef Name, ClangTidyContext *Context)
-      : ClangTidyCheck(Name, Context) {}
+  FunctionNamingCheck(StringRef Name, ClangTidyContext *Context);
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
-  
+
+private:
+  const std::string VALID_NAME_REGEX;
+  std::string VALID_PATH_REGEX;
+  ConfigurationParser configParser;
+
+  bool isOutsideOfTargetScope(std::string filename);
   bool fixName(const std::string &qualifier, std::string &name);
   void logNameError(SourceLocation Loc, std::string name);
 };
