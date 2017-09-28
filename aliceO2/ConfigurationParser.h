@@ -23,7 +23,7 @@ class ConfigurationParser {
 public:
   void init(std::string configFilePath, std::string checkName);
   std::string getValue(std::string key);
-  void writeKey(std::string key);
+  void writeKey(std::string key, std::string reasonToFix);
 
 private:
   std::string configFilePath;

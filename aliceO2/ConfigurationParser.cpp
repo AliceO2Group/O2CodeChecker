@@ -68,7 +68,7 @@ std::string ConfigurationParser::getValue(std::string key)
 }
 
 /// Writes the key to the provided configFilePath with corresponding empty value.
-void ConfigurationParser::writeKey(std::string key)
+void ConfigurationParser::writeKey(std::string key, std::string reasonToFix)
 {
   if(configFilePath == "" || configKeyToValue.count(key))
   {
@@ -78,9 +78,12 @@ void ConfigurationParser::writeKey(std::string key)
 
   FILE *work = fopen(configFilePath.c_str(),"a");
 
-  fprintf(work, "key: %s.%s\nvalue: '<provide_value>'\n",
+  fprintf(work, "key: %s.%s\n"
+                "value: '<provide_value>'\n"
+                "reason: %s\n\n",
     checkName.c_str(),
-    key.c_str());
+    key.c_str(),
+    reasonToFix.c_str());
 
   fclose(work);
 }
