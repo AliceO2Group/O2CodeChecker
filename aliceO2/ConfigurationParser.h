@@ -21,6 +21,8 @@ namespace aliceO2 {
 ///
 class ConfigurationParser {
 public:
+  ConfigurationParser();
+
   void init(std::string configFilePath, std::string checkName);
   std::string getValue(std::string key);
   void writeKey(std::string key, std::string reasonToFix);
@@ -28,6 +30,7 @@ public:
 private:
   std::string configFilePath;
   std::string checkName;
+  const std::string defaultValue;
   std::unordered_map<std::string,std::string> configKeyToValue;
 };
 

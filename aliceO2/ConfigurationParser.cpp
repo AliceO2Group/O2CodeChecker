@@ -17,6 +17,11 @@ namespace clang {
 namespace tidy {
 namespace aliceO2 {
 
+ConfigurationParser::ConfigurationParser()
+  : defaultValue("<provide_value")
+{
+}
+
 /// Reads the configuration file at configFilePath and populates a map for each configuration option
 /// that adresses the checkName.
 void ConfigurationParser::init(std::string configFilePath, std::string checkName)
@@ -60,7 +65,7 @@ void ConfigurationParser::init(std::string configFilePath, std::string checkName
 /// Gets the value of the pre-populated map that corresponds to the provided key.
 std::string ConfigurationParser::getValue(std::string key)
 {
-  if(configKeyToValue.count(key) == 0)
+  if(configKeyToValue.count(key) == 0 || configKeyToValue[key] == defaultValue)
   {
     return "";
   }
@@ -79,10 +84,11 @@ void ConfigurationParser::writeKey(std::string key, std::string reasonToFix)
   FILE *work = fopen(configFilePath.c_str(),"a");
 
   fprintf(work, "key: %s.%s\n"
-                "value: '<provide_value>'\n"
+                "value: '%s'\n"
                 "reason: %s\n\n",
     checkName.c_str(),
     key.c_str(),
+    defaultValue.c_str(),
     reasonToFix.c_str());
 
   fclose(work);
