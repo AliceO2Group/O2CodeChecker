@@ -18,7 +18,7 @@ namespace tidy {
 namespace aliceO2 {
 
 ConfigurationParser::ConfigurationParser()
-  : defaultValue("<provide_value")
+  : defaultValue("<provide_value>")
 {
 }
 
