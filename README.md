@@ -16,3 +16,4 @@ It offers:
 In the build directory of AliceO2 (containing the CMake compilations database in form of `compile_command.json`), run
 
     run_O2CodeChecker.py -clang-tidy-binary `which O2codecheck` -checks=-*,alice*
+
