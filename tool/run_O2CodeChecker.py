@@ -38,7 +38,10 @@ import argparse
 import json
 import multiprocessing
 import os
-import Queue
+try:
+    import Queue           # python2
+except ImportError:
+    import queue as Queue  # python3
 import re
 import shutil
 import subprocess
@@ -52,7 +55,7 @@ def find_compilation_database(path):
   result = './'
   while not os.path.isfile(os.path.join(result, path)):
     if os.path.realpath(result) == '/':
-      print 'Error: could not find compilation database.'
+      print ('Error: could not find compilation database.')
       sys.exit(1)
     result += '../'
   return os.path.realpath(result)
@@ -158,7 +161,7 @@ def main():
     if args.checks:
       invocation.append('-checks=' + args.checks)
     invocation.append('-')
-    print subprocess.check_output(invocation)
+    print (subprocess.check_output(invocation))
   except:
     print >>sys.stderr, "Unable to run clang-tidy."
     sys.exit(1)
@@ -198,13 +201,13 @@ def main():
   except KeyboardInterrupt:
     # This is a sad hack. Unfortunately subprocess goes
     # bonkers with ctrl-c and we start forking merrily.
-    print '\nCtrl-C detected, goodbye.'
+    print ('\nCtrl-C detected, goodbye.')
     if args.fix:
       shutil.rmtree(tmpdir)
     os.kill(0, 9)
 
   if args.fix:
-    print 'Applying fixes ...'
+    print ('Applying fixes ...')
     apply_fixes(args, tmpdir)
 
 if __name__ == '__main__':

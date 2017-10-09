@@ -15,7 +15,11 @@ import os
 import subprocess
 import re
 # these are for queue syncronized multi-threading
-import Queue
+try:
+    import Queue           # python2
+except ImportError:
+    import queue as Queue  # python3
+
 import threading
 import multiprocessing
 import time
@@ -45,7 +49,7 @@ def parseArgs():
 def verboseLog(string, level=0):
     global verbosity
     if verbosity > 0:
-        print string
+        print (string)
 
 def getListOfChangedFiles(colonseparatedfilepaths):
     """ processes the argument '-use-files' and returns a python list of filenames """
@@ -104,14 +108,14 @@ def queryListOfHeaders(command):
             headerlist.append(line.strip())
     return headerlist
 
-# service that processes one item in the queue
-def processItem(keepalive, changedheaderlist, queue, outqueue):
+# service that processes one item in the itemqueue
+def processItem(keepalive, changedheaderlist, itemqueue, outqueue):
     while len(keepalive) > 0:
       try:
           # this operation is blocking for at most 0.5 seconds
           # sad hack to be able to check whether we want this thread to be kept alive
           # unfortunately, the main process never exits otherwise
-          entry = queue.get(True, 0.5)
+          entry = itemqueue.get(True, 0.5)
           includedheaderlist=queryListOfHeaders(modifyCompileCommand(entry['command']))
           for header in changedheaderlist:
               for include in includedheaderlist:
@@ -122,14 +126,14 @@ def processItem(keepalive, changedheaderlist, queue, outqueue):
                       outqueue.put(entry)
                       continue
 
-          queue.task_done()
+          itemqueue.task_done()
       except Queue.Empty:
           pass
 
-def reportProgress(keepalive, queue, q2):
+def reportProgress(keepalive, itemqueue, q2):
     while len(keepalive)>0:
-        print "input queue has size " + str(queue.qsize())
-        print "output queue has size " + str(q2.qsize())
+        print ("input queue has size " + str(itemqueue.qsize()))
+        print ("output queue has size " + str(q2.qsize()))
         time.sleep(1)
 
 #custom function to remove duplicates and return a new list
@@ -177,7 +181,7 @@ def main():
     try:
         file=open('compile_commands.json').read()
     except IOError:
-        print "Problem opening the compilation database (file not found)"
+        print ("Problem opening the compilation database (file not found)")
         sys.exit(1)
 
     #convert json to dict
