@@ -11,7 +11,6 @@
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_ALICEO2_FUNCTION_NAMING_H
 
 #include "../ClangTidy.h"
-#include "ConfigurationParser.h"
 
 namespace clang {
 namespace tidy {
@@ -30,11 +29,11 @@ public:
 private:
   const std::string VALID_NAME_REGEX;
   std::string VALID_PATH_REGEX;
-  ConfigurationParser configParser;
 
   bool isOutsideOfTargetScope(std::string filename);
   bool fixName(const std::string &qualifier, std::string &name);
   void logNameError(SourceLocation Loc, std::string name);
+  bool isBaseMethodOutOfTargetScope(clang::SourceManager *const sourceManager,const CXXMethodDecl* methodDecl);
 };
 
 } // namespace aliceO2

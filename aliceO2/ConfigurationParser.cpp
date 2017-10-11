@@ -12,6 +12,7 @@
 #include <string>
 #include <ctype.h>
 #include <cstdio>
+#include <sys/file.h>
 
 namespace clang {
 namespace tidy {
@@ -22,9 +23,14 @@ ConfigurationParser::ConfigurationParser()
 {
 }
 
+void ConfigurationParser::init(std::string configFilePath, std::string checkName)
+{
+  initInner(configFilePath, checkName, FileLockType::fltLockFile);
+}
+
 /// Reads the configuration file at configFilePath and populates a map for each configuration option
 /// that adresses the checkName.
-void ConfigurationParser::init(std::string configFilePath, std::string checkName)
+void ConfigurationParser::initInner(std::string configFilePath, std::string checkName, FileLockType fileLockType)
 {
   this->configFilePath = configFilePath;
   this->checkName = checkName;
@@ -33,6 +39,10 @@ void ConfigurationParser::init(std::string configFilePath, std::string checkName
   if(!work)
   {
     return;
+  }
+  if(fileLockType == FileLockType::fltLockFile)
+  {
+    flock(fileno(work), LOCK_EX);
   }
 
   char temp[1024];
@@ -59,6 +69,10 @@ void ConfigurationParser::init(std::string configFilePath, std::string checkName
     }
   }
 
+  if(fileLockType == FileLockType::fltLockFile)
+  {
+    flock(fileno(work), LOCK_UN);
+  }
   fclose(work);
 }
 
@@ -79,9 +93,20 @@ void ConfigurationParser::writeKey(std::string key, std::string reasonToFix)
   {
     return;
   }
-  configKeyToValue[key]="";
 
   FILE *work = fopen(configFilePath.c_str(),"a");
+  flock(fileno(work), LOCK_EX);
+
+  initInner(configFilePath, checkName, FileLockType::fltNoLockFile);
+
+  if(configKeyToValue.count(key))
+  {
+    flock(fileno(work), LOCK_UN);
+    fclose(work);
+
+    return;
+  }
+  configKeyToValue[key]=defaultValue; // create key if it doesn't exist
 
   fprintf(work, "key: %s.%s\n"
                 "value: '%s'\n"
@@ -91,6 +116,7 @@ void ConfigurationParser::writeKey(std::string key, std::string reasonToFix)
     defaultValue.c_str(),
     reasonToFix.c_str());
 
+  flock(fileno(work), LOCK_UN);
   fclose(work);
 }
 

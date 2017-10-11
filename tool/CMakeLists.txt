@@ -35,6 +35,7 @@ install(TARGETS O2codecheck
 
 #install(PROGRAMS clang-tidy-diff.py DESTINATION share/clang)
 install(PROGRAMS run_O2CodeChecker.py DESTINATION bin)
+install(PROGRAMS fix_fail_logger.py DESTINATION bin)
 
 # we need to install the builtin headers in a path which is searched by the tool
 # FIXME: a soft link would be better

@@ -32,6 +32,13 @@ private:
   std::string checkName;
   const std::string defaultValue;
   std::unordered_map<std::string,std::string> configKeyToValue;
+
+  enum class FileLockType {
+    fltLockFile,
+    fltNoLockFile
+  };
+
+  void initInner(std::string configFilePath, std::string checkName, FileLockType fileLockType);
 };
 
 } // namespace aliceO2

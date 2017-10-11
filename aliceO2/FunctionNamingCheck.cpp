@@ -20,7 +20,7 @@ namespace aliceO2 {
 
 FunctionNamingCheck::FunctionNamingCheck(StringRef Name, ClangTidyContext *Context)
     : ClangTidyCheck(Name, Context)
-    ,VALID_NAME_REGEX("[a-z]+([A-Z][a-z]+)*[0-9]*")
+    ,VALID_NAME_REGEX("[a-z]+[a-zA-Z0-9]*")
     ,VALID_PATH_REGEX("")
 {
   VALID_PATH_REGEX = Options.getLocalOrGlobal("CheckPathRegex","");
@@ -30,11 +30,6 @@ FunctionNamingCheck::FunctionNamingCheck(StringRef Name, ClangTidyContext *Conte
                           "or pass the key-value pair with the command line argument --config");
     exit(1);
   }
-
-  std::string configFilePath = Options.getLocalOrGlobal("CodecheckerFixesFile","/tmp/.clang-tidy-fixes");
-  fprintf(stderr, "configFilePath: %s\n", configFilePath.c_str());
-
-  configParser.init(configFilePath, Name);
 }
 
 bool FunctionNamingCheck::isOutsideOfTargetScope(std::string filename)
@@ -44,23 +39,34 @@ bool FunctionNamingCheck::isOutsideOfTargetScope(std::string filename)
 
 void FunctionNamingCheck::registerMatchers(MatchFinder *Finder) {
   const auto validNameMatch = matchesName( std::string("::") + VALID_NAME_REGEX + "$" );
-  const auto invalidFunctionDecl = functionDecl(allOf(
-    unless(isImplicit()),
-    anyOf(
-      unless(validNameMatch),
-      allOf(returns(booleanType()), unless(matchesName("::(is|has).+$")))
-    )));
+  const auto isOperator = matchesName("::operator.*$");
 
-  Finder->addMatcher(invalidFunctionDecl.bind("function-decl"), this);
-  Finder->addMatcher(callExpr(allOf(
-    hasDeclaration(invalidFunctionDecl),
-    unless(hasDescendant(memberExpr()))
+  const auto invalidFunctionDecl = allOf(
+    unless(cxxConstructorDecl()),
+    unless(cxxDestructorDecl()),
+    unless(cxxMethodDecl(isOverride())),
+    functionDecl(allOf(
+      unless(isImplicit()),
+      unless(isOperator),
+      unless(validNameMatch)
+      ))
+    );
+
+  Finder->addMatcher(functionDecl(invalidFunctionDecl).bind("function-decl"), this);
+  Finder->addMatcher(declRefExpr(hasDeclaration(
+    invalidFunctionDecl
     )).bind("function-call"), this);
 
-  Finder->addMatcher(cxxMemberCallExpr(hasDeclaration(cxxMethodDecl(anyOf(
-    unless(validNameMatch),
-    allOf(returns(booleanType()), unless(matchesName("::(is|has).+$")))  
-    )))).bind("member-call"), this);
+  Finder->addMatcher(callExpr(allOf(
+    unless(cxxOperatorCallExpr()), // for not to match operators
+    cxxMemberCallExpr(hasDeclaration(cxxMethodDecl(allOf(
+      unless(isOverride()),
+      unless(cxxConstructorDecl()),
+      unless(cxxDestructorDecl()),
+      unless(isOperator),
+      unless(validNameMatch)
+      ))))
+    )).bind("member-call"), this);
 }
 
 void FunctionNamingCheck::check(const MatchFinder::MatchResult &Result) {
@@ -71,72 +77,142 @@ void FunctionNamingCheck::check(const MatchFinder::MatchResult &Result) {
     {
       return;
     }
+
+    const auto *methodDecl = static_cast<const CXXMethodDecl*>(MatchedFunctionDecl);
+    if(methodDecl && isBaseMethodOutOfTargetScope(Result.SourceManager, methodDecl))
+    {
+      return;
+    }
+
     std::string oldName = MatchedFunctionDecl->getDeclName().getAsString();
     std::string newName = oldName;
     std::string qualifier = MatchedFunctionDecl->getQualifiedNameAsString();
     qualifier = qualifier.substr(0, qualifier.size() - oldName.size());
 
-    bool fixed = fixName(qualifier, newName);
-    bool isBooleanType = MatchedFunctionDecl->getReturnType().getTypePtr()->isBooleanType();
-    bool hasValidPrefix = newName.substr(0,2)=="is" || newName.substr(0,3)=="has";
+    const bool fixed = fixName(qualifier, newName);
 
-    if( !(isBooleanType && !hasValidPrefix) && fixed && (newName != oldName) )
+    std::string message = "function \'%0\' does not follow the naming convention";
+
+    if( fixed && (newName != oldName) )
     {
-      if( isBooleanType )
-      {
-        diag(MatchedFunctionDecl->getLocation(), "function that returns bool \'%0\' must be prefixed with \'is\' or \'has\'")
-            << oldName
-            << FixItHint::CreateReplacement(MatchedFunctionDecl->getLocation(), newName);
-      }
-      else
-      {
-        diag(MatchedFunctionDecl->getLocation(), "function \'%0\' does not follow the naming convention")
-            << oldName
-            << FixItHint::CreateReplacement(MatchedFunctionDecl->getLocation(), newName);
-      }
+      diag(MatchedFunctionDecl->getLocation(), message.c_str())
+          << oldName
+          << FixItHint::CreateReplacement(MatchedFunctionDecl->getLocation(), newName);
     }
-    else if( (isBooleanType && !hasValidPrefix) || !fixed )
+    else if( !fixed )
     {
-      logNameError(MatchedFunctionDecl->getLocation(), qualifier + oldName);
+      logNameError(MatchedFunctionDecl->getLocation(),
+        qualifier + oldName,
+        message.replace(message.find("%0"), 2, oldName));
     }
   }
-  const auto *MatchedFunctionCall = Result.Nodes.getNodeAs<CallExpr>("function-call");
-  if( MatchedFunctionCall )
+  const auto *MatchedTFunctionCall = Result.Nodes.getNodeAs<UnresolvedLookupExpr>("function-call");
+  if( MatchedTFunctionCall )
   {
-    if( isOutsideOfTargetScope( Result.SourceManager->getFilename(MatchedFunctionCall->getLocStart()).str() ) )
+    if( MatchedTFunctionCall->getName()
+          .getAsString()
+          .substr(0, std::string("operator").size()) == "operator" )
     {
       return;
     }
-    const auto *AsFunctionDecl = MatchedFunctionCall->getDirectCallee();
-    std::string oldName = AsFunctionDecl->getDeclName().getAsString();
-    std::string newName = oldName;
-    std::string qualifier = AsFunctionDecl->getQualifiedNameAsString();
-    qualifier = qualifier.substr(0, qualifier.size() - oldName.size());
 
-    bool fixed = fixName(qualifier, newName);
-    bool isBooleanType = AsFunctionDecl->getReturnType().getTypePtr()->isBooleanType();
-    bool hasValidPrefix = newName.substr(0,2)=="is" || newName.substr(0,3)=="has";
-    const auto LocStart = MatchedFunctionCall->getLocStart().getLocWithOffset( qualifier.size() );
-
-    if( !(isBooleanType && !hasValidPrefix) && fixed && (newName != oldName) )
+    if( isOutsideOfTargetScope(
+          Result.SourceManager->getFilename(MatchedTFunctionCall->getLocStart()).str()) ||
+        isOutsideOfTargetScope(
+          Result.SourceManager->getFilename(MatchedTFunctionCall->getQualifierLoc().getBeginLoc()).str()) ||
+        (MatchedTFunctionCall->getQualifier() && (
+          (MatchedTFunctionCall->getQualifier()->getAsNamespace()
+            && isOutsideOfTargetScope(Result.SourceManager->getFilename(MatchedTFunctionCall->getQualifier()->getAsNamespace()->getLocStart()))) ||
+          (MatchedTFunctionCall->getQualifier()->getAsRecordDecl()
+            && isOutsideOfTargetScope(Result.SourceManager->getFilename(MatchedTFunctionCall->getQualifier()->getAsRecordDecl()->getLocStart())))
+          ))
+      )
     {
-      const std::string message = ( isBooleanType ?
-        "function that returns bool \'%0\' must be prefixed with \'is\' or \'has\'" :
-        "function \'%0\' does not follow the naming convention");
+      return;
+    }
+    std::string oldName = MatchedTFunctionCall->getName().getAsString();
+    std::string newName = oldName;
+    std::string qualifier = "";
+    if(MatchedTFunctionCall->getQualifier())
+    {
+      if(MatchedTFunctionCall->getQualifier()->getAsNamespace())
+      {
+        qualifier = MatchedTFunctionCall->getQualifier()->getAsNamespace()->getNameAsString();
+      }
+      else if(MatchedTFunctionCall->getQualifier()->getAsRecordDecl())
+      {
+        qualifier = MatchedTFunctionCall->getQualifier()->getAsRecordDecl()->getNameAsString();
+      }
+    }
 
+    const bool fixed = fixName(qualifier, newName);
+
+    const auto LocStart = MatchedTFunctionCall->getNameLoc();
+    std::string message = "function \'%0\' does not follow the naming convention";
+
+    if( fixed && (newName != oldName) )
+    {
       diag(LocStart, message.c_str())
           << oldName
           << FixItHint::CreateReplacement(LocStart, newName);
     }
-    else if( (isBooleanType && !hasValidPrefix) || !fixed )
+    else if( !fixed )
     {
-      logNameError(LocStart, qualifier + oldName);
+      logNameError(LocStart,
+        qualifier + oldName,
+        message.replace(message.find("%0"), 2, oldName));
     }
   }
+  const auto *MatchedFunctionCall = Result.Nodes.getNodeAs<DeclRefExpr>("function-call");
+  if( MatchedFunctionCall )
+  {
+    //fprintf(stderr, "Found funciton: %s\n", MatchedFunctionCall->getFoundDecl()->getNameAsString().c_str());
+
+    if( isOutsideOfTargetScope(
+          Result.SourceManager->getFilename(MatchedFunctionCall->getLocation()).str()) ||
+        isOutsideOfTargetScope(
+          Result.SourceManager->getFilename(MatchedFunctionCall->getDecl()->getLocation()).str())
+      )
+    {
+      return;
+    }
+    std::string oldName = MatchedFunctionCall->getFoundDecl()->getNameAsString();
+    std::string newName = oldName;
+    std::string qualifier = "";
+    if(MatchedFunctionCall->getQualifier())
+    {
+      qualifier = MatchedFunctionCall->getQualifier()->getAsIdentifier() ?
+        MatchedFunctionCall->getQualifier()->getAsIdentifier()->getName().str() : "";
+    }
+
+    const bool fixed = fixName(qualifier, newName);
+
+    const auto LocStart = MatchedFunctionCall->getQualifier() ?
+      MatchedFunctionCall->getQualifierLoc().getEndLoc().getLocWithOffset(2) : MatchedFunctionCall->getLocStart();
+    std::string message = "function \'%0\' does not follow the naming convention";
+
+    if( fixed && (newName != oldName) )
+    {
+      diag(LocStart, message.c_str())
+          << oldName
+          << FixItHint::CreateReplacement(LocStart, newName); 
+    }
+    else if( !fixed )
+    {
+      logNameError(LocStart,
+        qualifier + oldName,
+        message.replace(message.find("%0"), 2, oldName));
+    } 
+  }
+
   const auto *MatchedMemberExpr = Result.Nodes.getNodeAs<CXXMemberCallExpr>("member-call");
   if( MatchedMemberExpr )
   {
-    if( isOutsideOfTargetScope( Result.SourceManager->getFilename(MatchedMemberExpr->getLocStart()).str() ) )
+    if( isOutsideOfTargetScope(
+          Result.SourceManager->getFilename(MatchedMemberExpr->getLocStart()).str()) ||
+        isOutsideOfTargetScope(
+          Result.SourceManager->getFilename(MatchedMemberExpr->getMethodDecl()->getLocation()).str())
+      )
     {
       return;
     }
@@ -145,38 +221,35 @@ void FunctionNamingCheck::check(const MatchFinder::MatchResult &Result) {
     std::string qualifier = MatchedMemberExpr->getMethodDecl()->getQualifiedNameAsString();
     qualifier = qualifier.substr(0, qualifier.size() - oldName.size());
 
-    bool fixed = fixName(qualifier, newName);
-    bool isBooleanType = MatchedMemberExpr->getMethodDecl()->getReturnType().getTypePtr()->isBooleanType();
-    bool hasValidPrefix = newName.substr(0,2)=="is" || newName.substr(0,3)=="has";
+    const bool fixed = fixName(qualifier, newName);
+
     const auto LocStart = MatchedMemberExpr->getExprLoc();
+    std::string message = "function \'%0\' does not follow the naming convention";
 
-    if( !(isBooleanType && !hasValidPrefix) && fixed && (newName != oldName) )
+    if( fixed && (newName != oldName) )
     {
-      const std::string message = ( isBooleanType ?
-        "function that returns bool \'%0\' must be prefixed with \'is\' or \'has\'" :
-        "function \'%0\' does not follow the naming convention");
-
       diag(LocStart, message.c_str())
           << oldName
           << FixItHint::CreateReplacement(LocStart, newName);
     }
-    else if( (isBooleanType && !hasValidPrefix) || !fixed )
+    else if( !fixed )
     {
-      logNameError(LocStart, qualifier + oldName);
+      logNameError(LocStart,
+        qualifier + oldName,
+        message.replace(message.find("%0"), 2, oldName));
     }
   }
 }
 
 /// This function modifies the input string to one of the following ways:
-/// - Into a CamelCase string.
+/// - Into a camelCase string.
 /// - Into a string that is specified in the config options.
 ///
 /// return: Returns true if the input string is succesfully modified,
 ///         If neither of the modifying options succeeds false is returned.
 bool FunctionNamingCheck::fixName(const std::string &qualifier, std::string &name)
 {
-  std::string originalName = name;
-  std::string replace_option = configParser.getValue(qualifier + name);
+  std::string replace_option = Options.get(name, "");
   if( replace_option != "" )
   {
     name = replace_option;
@@ -201,14 +274,23 @@ bool FunctionNamingCheck::fixName(const std::string &qualifier, std::string &nam
   return std::regex_match( name, std::regex(VALID_NAME_REGEX) );
 }
 
-void FunctionNamingCheck::logNameError(SourceLocation Loc, std::string errorName)
+void FunctionNamingCheck::logNameError(SourceLocation Loc, std::string errorName, std::string reason)
 {
-
   diag(Loc, "Could not fix '%0'", DiagnosticIDs::Level::Error)
       << errorName;
+}
 
-  fprintf(stderr, "Writing key: %s\n", errorName.c_str());
-  configParser.writeKey(errorName);
+bool FunctionNamingCheck::isBaseMethodOutOfTargetScope(clang::SourceManager* const sourceManager,const CXXMethodDecl* methodDecl)
+{
+  if(methodDecl->size_overridden_methods() == 0)
+  {
+    return false;
+  }
+  // getting the base method decl
+  auto methodDeclBase = methodDecl->end_overridden_methods();
+  methodDeclBase--; // getting the last overriden method
+
+  return isOutsideOfTargetScope( sourceManager->getFilename((*methodDeclBase)->getLocation()).str() );
 }
 
 } // namespace aliceO2

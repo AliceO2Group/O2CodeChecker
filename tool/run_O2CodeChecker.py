@@ -42,6 +42,7 @@ import Queue
 import re
 import shutil
 import subprocess
+from subprocess import Popen, PIPE, STDOUT
 import sys
 import tempfile
 import threading
@@ -95,14 +96,19 @@ def apply_fixes(args, tmpdir):
   shutil.rmtree(tmpdir)
 
 
-def run_tidy(args, tmpdir, build_path, queue):
+def run_tidy(args, tmpdir, build_path, queue, clang_tidy_output_list):
   """Takes filenames out of queue and runs clang-tidy on them."""
   while True:
     name = queue.get()
     invocation = get_tidy_invocation(name, args.clang_tidy_binary, args.checks, args.warningsAsErrors,
                                      tmpdir, build_path, args.header_filter, args.config)
     sys.stdout.write(' '.join(invocation) + '\n')
-    subprocess.call(invocation)
+    #subprocess.call(invocation)
+    p = Popen(invocation, stdout=PIPE, stderr=STDOUT)
+    output = p.communicate()[0]
+    clang_tidy_output_list.append(output)
+    print output
+
     queue.task_done()
 
 
@@ -140,6 +146,9 @@ def main():
                       'after applying fixes')
   parser.add_argument('-p', dest='build_path',
                       help='Path used to read a compile command database.')
+  parser.add_argument('-clang-tidy-file-path', default=None,
+                      help='Path to the .clang-tidy file where the configuration is written. '
+                      'Usually this file should be in the main source directory of the project.')
   args = parser.parse_args()
 
   db_path = 'compile_commands.json'
@@ -177,13 +186,14 @@ def main():
 
   # Build up a big regexy filter from all command line arguments.
   file_name_re = re.compile('(' + ')|('.join(args.files) + ')')
+  clang_tidy_output_list = []
 
   try:
     # Spin up a bunch of tidy-launching threads.
     queue = Queue.Queue(max_task)
     for _ in range(max_task):
       t = threading.Thread(target=run_tidy,
-                           args=(args, tmpdir, build_path, queue))
+                           args=(args, tmpdir, build_path, queue, clang_tidy_output_list))
       t.daemon = True
       t.start()
 
@@ -206,6 +216,15 @@ def main():
   if args.fix:
     print 'Applying fixes ...'
     apply_fixes(args, tmpdir)
+
+  if args.clang_tidy_file_path:
+    print('Running fix_fail_logger.py')
+    fix_fail_logger = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'fix_fail_logger.py')
+    clang_tidy_output = '\n'.join(clang_tidy_output_list)
+
+    #p = Popen(['python', './fix_fail_logger.py', clang_tidy_file], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    p = Popen(['python', fix_fail_logger, args.clang_tidy_file_path], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    print p.communicate(input=clang_tidy_output)[0]
 
 if __name__ == '__main__':
   main()

@@ -6,7 +6,6 @@ add_clang_library(clangTidyAliceO2Module
   MemberNamesCheck.cpp
   NamespaceNamingCheck.cpp
   SizeofCheck.cpp
-  ConfigurationParser.cpp
 
   LINK_LIBS
   clangAST
