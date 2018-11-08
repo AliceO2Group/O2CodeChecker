@@ -73,6 +73,23 @@ public:
     return Result;
   }
 
+  /// \brief Read a named option from the ``Context`` and parse it as an
+  /// integral type ``T``.
+  ///
+  /// Reads the option with the check-local name \p LocalName from local or
+  /// global ``CheckOptions``. Gets local option first. If local is not present,
+  /// falls back to get global option. If global option is not present either,
+  /// returns Default.
+  template <typename T>
+  typename std::enable_if<std::is_integral<T>::value, T>::type
+  getLocalOrGlobal(StringRef LocalName, T Default) const {
+    std::string Value = getLocalOrGlobal(LocalName, "");
+    T Result = Default;
+    if (!Value.empty())
+      StringRef(Value).getAsInteger(10, Result);
+    return Result;
+  }
+
   /// \brief Stores an option with the check-local name \p LocalName with string
   /// value \p Value to \p Options.
   void store(ClangTidyOptions::OptionMap &Options, StringRef LocalName,
@@ -187,16 +204,14 @@ public:
   ClangTidyOptions::OptionMap getCheckOptions();
 
 private:
-  typedef std::vector<std::pair<std::string, bool>> CheckersList;
-  CheckersList getCheckersControlList(GlobList &Filter);
-
   ClangTidyContext &Context;
   std::unique_ptr<ClangTidyCheckFactories> CheckFactories;
 };
 
 /// \brief Fills the list of check names that are enabled when the provided
 /// filters are applied.
-std::vector<std::string> getCheckNames(const ClangTidyOptions &Options);
+std::vector<std::string> getCheckNames(const ClangTidyOptions &Options,
+                                       bool AllowEnablingAnalyzerAlphaCheckers);
 
 /// \brief Returns the effective check-specific options.
 ///
@@ -204,30 +219,38 @@ std::vector<std::string> getCheckNames(const ClangTidyOptions &Options);
 /// effective options from all created checks. The returned set of options
 /// includes default check-specific options for all keys not overridden by \p
 /// Options.
-ClangTidyOptions::OptionMap getCheckOptions(const ClangTidyOptions &Options);
+ClangTidyOptions::OptionMap
+getCheckOptions(const ClangTidyOptions &Options,
+                bool AllowEnablingAnalyzerAlphaCheckers);
 
 /// \brief Run a set of clang-tidy checks on a set of files.
 ///
-/// \param Profile if provided, it enables check profile collection in
-/// MatchFinder, and will contain the result of the profile.
-ClangTidyStats
-runClangTidy(std::unique_ptr<ClangTidyOptionsProvider> OptionsProvider,
-             const tooling::CompilationDatabase &Compilations,
-             ArrayRef<std::string> InputFiles,
-             std::vector<ClangTidyError> *Errors,
-             ProfileData *Profile = nullptr);
+/// \param EnableCheckProfile If provided, it enables check profile collection
+/// in MatchFinder, and will contain the result of the profile.
+/// \param StoreCheckProfile If provided, and EnableCheckProfile is true,
+/// the profile will not be output to stderr, but will instead be stored
+/// as a JSON file in the specified directory.
+void runClangTidy(clang::tidy::ClangTidyContext &Context,
+                  const tooling::CompilationDatabase &Compilations,
+                  ArrayRef<std::string> InputFiles,
+                  llvm::IntrusiveRefCntPtr<vfs::FileSystem> BaseFS,
+                  bool EnableCheckProfile = false,
+                  llvm::StringRef StoreCheckProfile = StringRef());
 
 // FIXME: This interface will need to be significantly extended to be useful.
 // FIXME: Implement confidence levels for displaying/fixing errors.
 //
 /// \brief Displays the found \p Errors to the users. If \p Fix is true, \p
-/// Errors containing fixes are automatically applied.
-void handleErrors(const std::vector<ClangTidyError> &Errors, bool Fix,
-                  unsigned &WarningsAsErrorsCount);
+/// Errors containing fixes are automatically applied and reformatted. If no
+/// clang-format configuration file is found, the given \P FormatStyle is used.
+void handleErrors(ClangTidyContext &Context, bool Fix,
+                  unsigned &WarningsAsErrorsCount,
+                  llvm::IntrusiveRefCntPtr<vfs::FileSystem> BaseFS);
 
 /// \brief Serializes replacements into YAML and writes them to the specified
 /// output stream.
-void exportReplacements(const std::vector<ClangTidyError> &Errors,
+void exportReplacements(StringRef MainFilePath,
+                        const std::vector<ClangTidyError> &Errors,
                         raw_ostream &OS);
 
 } // end namespace tidy
