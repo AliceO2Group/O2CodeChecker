@@ -1,4 +1,7 @@
 set(LLVM_LINK_COMPONENTS
+  AllTargetsAsmParsers
+  AllTargetsDescs
+  AllTargetsInfos
   support
   )
 
@@ -7,6 +10,7 @@ add_clang_executable(O2codecheck
   )
 
 target_link_libraries(O2codecheck
+  PRIVATE
   clangAST
   clangASTMatchers
   clangBasic
@@ -17,17 +21,26 @@ target_link_libraries(O2codecheck
   clangTidyReportingModule
 
   # include checkers available from main clang-tidy
+  clangTidyAndroidModule
+  clangTidyAbseilModule
   clangTidyBoostModule
+  clangTidyBugproneModule
   clangTidyCERTModule
   clangTidyCppCoreGuidelinesModule
+  clangTidyFuchsiaModule
   clangTidyGoogleModule
+  clangTidyHICPPModule
   clangTidyLLVMModule
   clangTidyMiscModule
   clangTidyModernizeModule
+  clangTidyMPIModule
+  clangTidyObjCModule
   clangTidyPerformanceModule
+  clangTidyPortabilityModule
   clangTidyReadabilityModule
-
+  clangTidyZirconModule
   clangTooling
+  clangToolingCore
   )
 
 install(TARGETS O2codecheck

@@ -30,11 +30,13 @@ public:
   }
 };
 
+ 
 } // namespace aliceO2
 
 // Register the AliceO2TidyModule using this statically initialized variable.
-static ClangTidyModuleRegistry::Add<aliceO2::AliceO2Module>
-X("aliceO2-module", "Adds AliceO2 specific checks");
+static ClangTidyModuleRegistry::Add<aliceO2::AliceO2Module> X("aliceO2-module",
+						     "Adds AliceO2 specific checks");
+
 
 // This anchor is used to force the linker to link in the generated object file
 // and thus register the AliceO2Module.
