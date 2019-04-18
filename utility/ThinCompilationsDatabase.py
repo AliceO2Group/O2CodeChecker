@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # A python script with the goal
 # to transform a (large) compilations database
@@ -9,13 +9,17 @@
 #
 # First version: Sandro Wenzel (June 2017)
 
+from __future__ import print_function
 import argparse
 import json
 import os
 import subprocess
 import re
 # these are for queue syncronized multi-threading
-import Queue
+try:
+  import Queue
+except ImportError:
+  import queue as Queue
 import threading
 import multiprocessing
 import time
@@ -45,7 +49,7 @@ def parseArgs():
 def verboseLog(string, level=0):
     global verbosity
     if verbosity > 0:
-        print string
+        print(string)
 
 def getListOfChangedFiles(colonseparatedfilepaths):
     """ processes the argument '-use-files' and returns a python list of filenames """
@@ -128,8 +132,8 @@ def processItem(keepalive, changedheaderlist, queue, outqueue):
 
 def reportProgress(keepalive, queue, q2):
     while len(keepalive)>0:
-        print "input queue has size " + str(queue.qsize())
-        print "output queue has size " + str(q2.qsize())
+        print("input queue has size " + str(queue.qsize()))
+        print("output queue has size " + str(q2.qsize()))
         time.sleep(1)
 
 #custom function to remove duplicates and return a new list
@@ -173,11 +177,11 @@ def main():
     #setup the isInvalid (closure) function
     isInvalid=makeInvalidClosure(args)
 
-    #open the compilations database 
+    #open the compilations database
     try:
         file=open('compile_commands.json').read()
     except IOError:
-        print "Problem opening the compilation database (file not found)"
+        print("Problem opening the compilation database (file not found)")
         sys.exit(1)
 
     #convert json to dict
