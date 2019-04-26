@@ -47,7 +47,7 @@ void VirtFuncLister::check(const MatchFinder::MatchResult &Result) {
         auto enditer = MatchedDecl->end_overridden_methods();
 
         if (iter == enditer) {
-          SourceLocation loc = MatchedDecl->getLocStart();//getLocation();
+          SourceLocation loc = MatchedDecl->getBeginLoc();//getLocation();
           loc.dump(SM);
           llvm::errs() << "VIRTUAL-START-DECLARATION \n";
         } else {
@@ -69,10 +69,10 @@ void VirtFuncLister::check(const MatchFinder::MatchResult &Result) {
             enditer = (*iter)->end_overridden_methods();
             iter = (*iter)->begin_overridden_methods();
           }
-          SourceLocation loc = (*lastiter)->getLocStart();//getLocation();
+          SourceLocation loc = (*lastiter)->getBeginLoc();//getLocation();
           loc.dump(SM);
           llvm::errs() << " OVERRIDEN-AT ";
-          loc = MatchedDecl->getLocStart();//getLocation();
+          loc = MatchedDecl->getBeginLoc();//getLocation();
           loc.dump(SM);
           llvm::errs() << "\n";
         }

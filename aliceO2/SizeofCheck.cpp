@@ -31,7 +31,7 @@ void SizeofCheck::check(const MatchFinder::MatchResult &Result) {
 
   // is argument of sizeof a Type?
   if (Expr->isArgumentType()) {
-    diag(Expr->getLocStart(), "consider using sizeof() on instance instead on direct type");
+    diag(Expr->getBeginLoc(), "consider using sizeof() on instance instead on direct type");
     return;
   }
 
@@ -41,7 +41,7 @@ void SizeofCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   // no parens -> issue warning
-  diag(Expr->getLocStart(), "consider using parens () for arguments to sizeof");
+  diag(Expr->getBeginLoc(), "consider using parens () for arguments to sizeof");
 }
 
 } // namespace aliceO2
