@@ -98,7 +98,11 @@ def modifyCompileCommand(command):
 def matchesHeader(line, header):
     expression=".*\.h"
     # make this more efficient by compiling the expression
-    return re.match(expression, line) is not None
+    try:
+        return re.match(expression, line.decode("utf-8")) is not None
+    except:
+        return re.match(expression, line) is not None
+
     
 def queryListOfHeaders(command):
     proc=subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
