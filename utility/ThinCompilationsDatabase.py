@@ -108,8 +108,11 @@ def queryListOfHeaders(command):
     proc=subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     headerlist=[]
     for line in proc.stdout:
-        if matchesHeader(line.strip(), headerlist):
-            headerlist.append(line.strip())
+        line = line.strip()
+        if matchesHeader(line, headerlist):
+            if isinstance(line, bytes):
+                line = line.decode('utf-8')
+            headerlist.append(line)
     return headerlist
 
 # service that processes one item in the queue
