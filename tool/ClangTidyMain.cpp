@@ -254,7 +254,7 @@ static void printStats(const ClangTidyStats &Stats) {
 }
 
 static std::unique_ptr<ClangTidyOptionsProvider> createOptionsProvider(
-   llvm::IntrusiveRefCntPtr<vfs::FileSystem> FS) {
+   llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS) {
   ClangTidyGlobalOptions GlobalOptions;
   if (std::error_code Err = parseLineFilter(LineFilter, GlobalOptions)) {
     llvm::errs() << "Invalid LineFilter: " << Err.message() << "\n\nUsage:\n";
@@ -302,9 +302,9 @@ static std::unique_ptr<ClangTidyOptionsProvider> createOptionsProvider(
                                                 OverrideOptions, std::move(FS));
 }
 
-llvm::IntrusiveRefCntPtr<vfs::FileSystem>
+llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem>
 getVfsOverlayFromFile(const std::string &OverlayFile) {
-  llvm::IntrusiveRefCntPtr<vfs::OverlayFileSystem> OverlayFS(
+  llvm::IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> OverlayFS(
       new vfs::OverlayFileSystem(vfs::getRealFileSystem()));
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> Buffer =
       OverlayFS->getBufferForFile(OverlayFile);
@@ -315,7 +315,7 @@ getVfsOverlayFromFile(const std::string &OverlayFile) {
     return nullptr;
   }
 
-  IntrusiveRefCntPtr<vfs::FileSystem> FS = vfs::getVFSFromYAML(
+  IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS = vfs::getVFSFromYAML(
       std::move(Buffer.get()), /*DiagHandler*/ nullptr, OverlayFile);
   if (!FS) {
     llvm::errs() << "Error: invalid virtual filesystem overlay file '"
@@ -329,7 +329,7 @@ getVfsOverlayFromFile(const std::string &OverlayFile) {
 static int clangTidyMain(int argc, const char **argv) {
   CommonOptionsParser OptionsParser(argc, argv, ClangTidyCategory,
                                     cl::ZeroOrMore);
-  llvm::IntrusiveRefCntPtr<vfs::FileSystem> BaseFS(
+  llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> BaseFS(
       VfsOverlay.empty() ? vfs::getRealFileSystem()
                          : getVfsOverlayFromFile(VfsOverlay));
   if (!BaseFS)
@@ -421,9 +421,9 @@ static int clangTidyMain(int argc, const char **argv) {
 
   ClangTidyContext Context(std::move(OwningOptionsProvider),
                            AllowEnablingAnalyzerAlphaCheckers);
-  runClangTidy(Context, OptionsParser.getCompilations(), PathList, BaseFS,
-               EnableCheckProfile, ProfilePrefix);
-  ArrayRef<ClangTidyError> Errors = Context.getErrors();
+  std::vector<ClangTidyError> Errors =
+      runClangTidy(Context, OptionsParser.getCompilations(), PathList, BaseFS,
+                   EnableCheckProfile, ProfilePrefix);
   bool FoundErrors = llvm::find_if(Errors, [](const ClangTidyError &E) {
                        return E.DiagLevel == ClangTidyError::Error;
                      }) != Errors.end();
@@ -433,7 +433,7 @@ static int clangTidyMain(int argc, const char **argv) {
   unsigned WErrorCount = 0;
 
   // -fix-errors implies -fix.
-  handleErrors(Context, (FixErrors || Fix) && !DisableFixes, WErrorCount,
+  handleErrors(Errors, Context, (FixErrors || Fix) && !DisableFixes, WErrorCount,
                BaseFS);
 
   if (!ExportFixes.empty() && !Errors.empty()) {
