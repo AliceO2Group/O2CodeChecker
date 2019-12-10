@@ -1,9 +1,8 @@
 //===--- ClangTidyDiagnosticConsumer.h - clang-tidy -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -102,6 +101,12 @@ public:
   /// \brief Initializes \c ClangTidyContext instance.
   ClangTidyContext(std::unique_ptr<ClangTidyOptionsProvider> OptionsProvider,
                    bool AllowEnablingAnalyzerAlphaCheckers = false);
+  /// Sets the DiagnosticsEngine that diag() will emit diagnostics to.
+  // FIXME: this is required initialization, and should be a constructor param.
+  // Fix the context -> diag engine -> consumer -> context initialization cycle.
+  void setDiagnosticsEngine(DiagnosticsEngine *DiagEngine) {
+    this->DiagEngine = DiagEngine;
+  }
 
   ~ClangTidyContext();
 
@@ -133,7 +138,7 @@ public:
 
   /// \brief Returns the name of the clang-tidy check which produced this
   /// diagnostic ID.
-  StringRef getCheckName(unsigned DiagnosticID) const;
+  std::string getCheckName(unsigned DiagnosticID) const;
 
   /// \brief Returns \c true if the check is enabled for the \c CurrentFile.
   ///
@@ -160,12 +165,6 @@ public:
   /// counters.
   const ClangTidyStats &getStats() const { return Stats; }
 
-  /// \brief Returns all collected errors.
-  ArrayRef<ClangTidyError> getErrors() const { return Errors; }
-
-  /// \brief Clears collected errors.
-  void clearErrors() { Errors.clear(); }
-
   /// \brief Control profile collection in clang-tidy.
   void setEnableProfiling(bool Profile);
   bool getEnableProfiling() const { return Profile; }
@@ -191,19 +190,19 @@ public:
     return AllowEnablingAnalyzerAlphaCheckers;
   }
 
+  using DiagLevelAndFormatString = std::pair<DiagnosticIDs::Level, std::string>;
+  DiagLevelAndFormatString getDiagLevelAndFormatString(unsigned DiagnosticID,
+                                                       SourceLocation Loc) {
+    return DiagLevelAndFormatString(
+        static_cast<DiagnosticIDs::Level>(
+            DiagEngine->getDiagnosticLevel(DiagnosticID, Loc)),
+        DiagEngine->getDiagnosticIDs()->getDescription(DiagnosticID));
+  }
+
 private:
-  // Calls setDiagnosticsEngine() and storeError().
+  // Writes to Stats.
   friend class ClangTidyDiagnosticConsumer;
-  friend class ClangTidyPluginAction;
 
-  /// \brief Sets the \c DiagnosticsEngine so that Diagnostics can be generated
-  /// correctly.
-  void setDiagnosticsEngine(DiagnosticsEngine *Engine);
-
-  /// \brief Store an \p Error.
-  void storeError(const ClangTidyError &Error);
-
-  std::vector<ClangTidyError> Errors;
   DiagnosticsEngine *DiagEngine;
   std::unique_ptr<ClangTidyOptionsProvider> OptionsProvider;
 
@@ -227,6 +226,23 @@ private:
   bool AllowEnablingAnalyzerAlphaCheckers;
 };
 
+/// Check whether a given diagnostic should be suppressed due to the presence
+/// of a "NOLINT" suppression comment.
+/// This is exposed so that other tools that present clang-tidy diagnostics
+/// (such as clangd) can respect the same suppression rules as clang-tidy.
+/// This does not handle suppression of notes following a suppressed diagnostic;
+/// that is left to the caller is it requires maintaining state in between calls
+/// to this function.
+/// The `CheckMacroExpansion` parameter determines whether the function should
+/// handle the case where the diagnostic is inside a macro expansion. A degree
+/// of control over this is needed because handling this case can require
+/// examining source files other than the one in which the diagnostic is
+/// located, and in some use cases we cannot rely on such other files being
+/// mapped in the SourceMapper.
+bool ShouldSuppressDiagnostic(DiagnosticsEngine::Level DiagLevel,
+                              const Diagnostic &Info, ClangTidyContext &Context,
+                              bool CheckMacroExpansion = true);
+
 /// \brief A diagnostic consumer that turns each \c Diagnostic into a
 /// \c SourceManager-independent \c ClangTidyError.
 //
@@ -235,6 +251,7 @@ private:
 class ClangTidyDiagnosticConsumer : public DiagnosticConsumer {
 public:
   ClangTidyDiagnosticConsumer(ClangTidyContext &Ctx,
+                              DiagnosticsEngine *ExternalDiagEngine = nullptr,
                               bool RemoveIncompatibleErrors = true);
 
   // FIXME: The concept of converting between FixItHints and Replacements is
@@ -243,13 +260,12 @@ public:
   void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
                         const Diagnostic &Info) override;
 
-  /// \brief Flushes the internal diagnostics buffer to the ClangTidyContext.
-  void finish() override;
+  // Retrieve the diagnostics that were captured.
+  std::vector<ClangTidyError> take();
 
 private:
   void finalizeLastError();
-
-  void removeIncompatibleErrors(SmallVectorImpl<ClangTidyError> &Errors) const;
+  void removeIncompatibleErrors();
 
   /// \brief Returns the \c HeaderFilter constructed for the options set in the
   /// context.
@@ -257,13 +273,15 @@ private:
 
   /// \brief Updates \c LastErrorRelatesToUserCode and LastErrorPassesLineFilter
   /// according to the diagnostic \p Location.
-  void checkFilters(SourceLocation Location);
+  void checkFilters(SourceLocation Location, const SourceManager &Sources);
   bool passesLineFilter(StringRef FileName, unsigned LineNumber) const;
 
+  void forwardDiagnostic(const Diagnostic &Info);
+
   ClangTidyContext &Context;
+  DiagnosticsEngine *ExternalDiagEngine;
   bool RemoveIncompatibleErrors;
-  std::unique_ptr<DiagnosticsEngine> Diags;
-  SmallVector<ClangTidyError, 8> Errors;
+  std::vector<ClangTidyError> Errors;
   std::unique_ptr<llvm::Regex> HeaderFilter;
   bool LastErrorRelatesToUserCode;
   bool LastErrorPassesLineFilter;
