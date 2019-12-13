@@ -9,6 +9,7 @@
 
 #include "NamespaceNamingCheck.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/ASTMatchers/ASTMatchersMacros.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include <regex>
 #include <string>
@@ -17,6 +18,13 @@
 using namespace clang::ast_matchers;
 
 namespace clang {
+namespace ast_matchers {
+AST_MATCHER_P(UsingDirectiveDecl, nominatedNamespace,
+              internal::Matcher<NamespaceDecl>, InnerMatcher)
+{
+  return InnerMatcher.matches(*Node.getNominatedNamespace(), Finder, Builder);
+}
+} // namespace ast_matchers
 namespace tidy {
 namespace aliceO2 {
  
@@ -42,18 +50,26 @@ bool isOutsideOfTargetScope(std::string filename)
 
 void NamespaceNamingCheck::registerMatchers(MatchFinder *Finder) {
   const auto validNameMatch = matchesName( std::string("::") + VALID_NAME_REGEX + "$" );
+  const auto inO2NSMatch = matchesName("^::o2::");
 
   // matches namespace declarations that have invalid name
   Finder->addMatcher(namespaceDecl(allOf(
+    inO2NSMatch,
     unless(validNameMatch),
     unless(isAnonymous())
     )).bind("namespace-decl"), this);
   // matches usage of namespace
-  Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(unless(validNameMatch)
-    )))).bind("namespace-usage"), this );
+  Finder->addMatcher(nestedNameSpecifierLoc(loc(nestedNameSpecifier(specifiesNamespace(allOf(
+    inO2NSMatch,
+    unless(validNameMatch)
+    ))))).bind("namespace-usage"), this);
   // matches "using namespace" declarations
-  Finder->addMatcher(usingDirectiveDecl(unless(isImplicit()
-    )).bind("using-namespace"), this);
+  Finder->addMatcher(usingDirectiveDecl(allOf(
+    unless(isImplicit()),
+    nominatedNamespace(allOf(
+      inO2NSMatch,
+      unless(validNameMatch)
+    )))).bind("using-namespace"), this);
 }
 
 void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
@@ -111,11 +127,6 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
     }
     std::string newName(MatchedUsingNamespace->getNominatedNamespace()->getDeclName().getAsString());
     std::string oldName=newName;
-
-    if( std::regex_match(newName, std::regex(VALID_NAME_REGEX)) )
-    {
-      return;
-    }
 
     if(fixNamespaceName(newName))
     {
