@@ -69,7 +69,7 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
 
     if(fixNamespaceName(newName))
     {
-      diag(MatchedNamespaceDecl->getLocation(), "namespace %0 does not follow the underscore convention")
+      diag(MatchedNamespaceDecl->getLocation(), "namespace %q0 does not follow the underscore convention")
         << MatchedNamespaceDecl
         << FixItHint::CreateReplacement(MatchedNamespaceDecl->getLocation(), newName);
     }
@@ -92,7 +92,7 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
 
     if(fixNamespaceName(newName))
     {
-      diag(MatchedNamespaceLoc->getLocalBeginLoc(), "namespace %0 does not follow the underscore convention")
+      diag(MatchedNamespaceLoc->getLocalBeginLoc(), "namespace %q0 does not follow the underscore convention")
         << AsNamespace
         << FixItHint::CreateReplacement(MatchedNamespaceLoc->getLocalBeginLoc(), newName);
     }
@@ -119,7 +119,7 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
 
     if(fixNamespaceName(newName))
     {
-      diag(MatchedUsingNamespace->getLocation(), "namespace %0 does not follow the underscore convention")
+      diag(MatchedUsingNamespace->getLocation(), "namespace %q0 does not follow the underscore convention")
         << MatchedUsingNamespace->getNominatedNamespace()
         << FixItHint::CreateReplacement(MatchedUsingNamespace->getLocation(), newName);
     }
