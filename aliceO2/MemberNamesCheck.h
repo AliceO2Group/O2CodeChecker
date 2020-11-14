@@ -11,6 +11,7 @@
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_ALICEO2_MEMBER_NAMES_H
 
 #include "../ClangTidy.h"
+#include "../ClangTidyCheck.h"
 #include <regex>
 
 namespace clang {
