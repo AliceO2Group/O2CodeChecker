@@ -11,6 +11,7 @@
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_PLUGIN_FOO_H
 
 #include "../ClangTidy.h"
+#include "../ClangTidyCheck.h"
 
 namespace clang {
 namespace tidy {
