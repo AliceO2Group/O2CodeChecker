@@ -33,6 +33,7 @@ target_link_libraries(O2codecheck
   clangTidyHICPPModule
   clangTidyLinuxKernelModule
   clangTidyLLVMModule
+  clangTidyLLVMLibcModule
   clangTidyMiscModule
   clangTidyModernizeModule
   clangTidyMPIModule
