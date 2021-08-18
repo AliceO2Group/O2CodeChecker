@@ -21,11 +21,13 @@ target_link_libraries(O2codecheck
   clangTidyReportingModule
 
   # include checkers available from main clang-tidy
+  clangTidyAlteraModule
   clangTidyAndroidModule
   clangTidyAbseilModule
   clangTidyBoostModule
   clangTidyBugproneModule
   clangTidyCERTModule
+  clangTidyConcurrencyModule
   clangTidyCppCoreGuidelinesModule
   clangTidyDarwinModule
   clangTidyFuchsiaModule
