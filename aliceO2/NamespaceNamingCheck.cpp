@@ -143,7 +143,7 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
 
 bool NamespaceNamingCheck::fixNamespaceName(std::string &name)
 {
-  std::string replace_option = Options.get(name, "");
+  std::string replace_option = Options.get(name, "").str();
   if( replace_option != "" )
   {
     name = replace_option;
