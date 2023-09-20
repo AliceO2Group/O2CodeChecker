@@ -6,4 +6,5 @@ Clang-Tidy Checks
 .. toctree::
    aliceO2-MemberNamesCheck
    aliceO2-SizeofCheck
+   aliceO2-function-naming
    aliceO2-namespace-naming
