@@ -57,7 +57,9 @@ install(PROGRAMS run_O2CodeChecker.py DESTINATION bin)
 
 # we need to install the builtin headers in a path which is searched by the tool
 # FIXME: a soft link would be better
-install(DIRECTORY ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION}/include DESTINATION lib/clang/${LLVM_PACKAGE_VERSION})
+string(REPLACE "." ";" LLVM_PACKAGE_VERSION_LIST ${LLVM_PACKAGE_VERSION})
+list(GET LLVM_PACKAGE_VERSION_LIST 0 LLVM_PACKAGE_VERSION_MAJOR)
+install(DIRECTORY ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION_MAJOR}/include DESTINATION lib/clang/${LLVM_PACKAGE_VERSION_MAJOR})
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   # On MacOS we need to do the same with C++ headers since they are in a non-standard location
