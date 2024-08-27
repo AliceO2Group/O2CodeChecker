@@ -63,7 +63,7 @@ def find_compilation_database(path):
 
 
 def get_tidy_invocation(f, clang_tidy_binary, checks, warningsAsErrors, tmpdir, build_path,
-                        header_filter, config):
+                        header_filter, config, extra_args):
   """Gets a command line for clang-tidy."""
   start = [clang_tidy_binary]
   if header_filter is not None:
@@ -77,6 +77,8 @@ def get_tidy_invocation(f, clang_tidy_binary, checks, warningsAsErrors, tmpdir, 
     start.append('-warnings-as-errors=' + warningsAsErrors)
   if config:
     start.append('-config=' + config)
+  if extra_args is not None:
+    start.append(extra_args)
   if tmpdir is not None:
     start.append('-export-fixes')
     # Get a temporary file. We immediately close the handle so clang-tidy can
@@ -104,7 +106,7 @@ def run_tidy(args, tmpdir, build_path, queue):
   while True:
     name = queue.get()
     invocation = get_tidy_invocation(name, args.clang_tidy_binary, args.checks, args.warningsAsErrors,
-                                     tmpdir, build_path, args.header_filter, args.config)
+                                     tmpdir, build_path, args.header_filter, args.config, args.extra_args)
     sys.stdout.write(' '.join(invocation) + '\n')
     subprocess.call(invocation)
     queue.task_done()
@@ -130,6 +132,8 @@ def main():
   parser.add_argument('-config', default=None,
                        help='config option for check , when not specified, use clang-tidy '
                        'default')
+  parser.add_argument('-extra-args', default=None,
+                       help='Extra arguments to pass to o2codechecker')
   parser.add_argument('-header-filter', default=None,
                       help='regular expression matching the names of the '
                       'headers to output diagnostics from. Diagnostics from '
