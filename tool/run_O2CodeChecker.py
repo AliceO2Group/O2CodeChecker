@@ -88,6 +88,7 @@ def get_tidy_invocation(f, clang_tidy_binary, checks, warningsAsErrors, tmpdir, 
     start.append(name)
   start.append('-p=' + build_path)
   start.append(f)
+  start.append('--extra-arg=-fopenmp')
   return start
 
 

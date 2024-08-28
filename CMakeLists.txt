@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.4.3)
 enable_testing()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # require at least gcc 4.9 !!
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-    message(FATAL_ERROR "GCC version must be at least 4.9!")
+  # require at least gcc 12.0 !!
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+    message(FATAL_ERROR "GCC version must be at least 12.0!")
   endif()
 endif()
 
@@ -55,5 +55,8 @@ add_subdirectory(test)
 # some extra utilities
 add_subdirectory(utility)
 
+string(REPLACE "." ";" LLVM_PACKAGE_VERSION_LIST ${LLVM_PACKAGE_VERSION})
+list(GET LLVM_PACKAGE_VERSION_LIST 0 LLVM_PACKAGE_VERSION_MAJOR)
+install(FILES omp.h DESTINATION lib/clang/${LLVM_PACKAGE_VERSION_MAJOR}/include)
 
 endif()
