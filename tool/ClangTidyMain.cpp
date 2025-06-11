@@ -15,8 +15,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "ClangTidyMain.h"
-#include "../ClangTidy.h"
-#include "../ClangTidyForceLinker.h"
+#include "clang-tidy/ClangTidy.h"
+//#include "clang-tidy/ClangTidyForceLinker.h"
 #include "../GlobList.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "llvm/ADT/StringSet.h"
@@ -415,7 +415,7 @@ static bool verifyChecks(const StringSet<> &AllChecks, StringRef CheckGlob,
     if (Cur.empty())
       continue;
     Cur.consume_front("-");
-    if (Cur.startswith("clang-diagnostic"))
+    if (Cur.starts_with("clang-diagnostic"))
       continue;
     if (Cur.contains('*')) {
       SmallString<128> RegexText("^");

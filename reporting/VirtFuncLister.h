@@ -10,8 +10,8 @@
 #ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_VIRTFUNCLISTER_NAMES_H
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_VIRTFUNCLISTER_NAMES_H
 
-#include "../ClangTidy.h"
-#include "../ClangTidyCheck.h"
+#include "clang-tidy/ClangTidy.h"
+#include "clang-tidy/ClangTidyCheck.h"
 
 namespace clang {
 namespace tidy {

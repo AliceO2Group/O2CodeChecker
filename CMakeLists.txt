@@ -14,7 +14,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
 
 
   # find clang + llvm
-  find_package(Clang REQUIRED)
+  find_package(Clang REQUIRED CONFIG)
 
   if( LLVM_FOUND )
     list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
