@@ -2,70 +2,70 @@ set(LLVM_LINK_COMPONENTS
   AllTargetsAsmParsers
   AllTargetsDescs
   AllTargetsInfos
+  FrontendOpenMP
+  TargetParser
   support
   )
 
-add_clang_executable(O2codecheck
+# Needed by LLVM's CMake checks because this file defines multiple targets.
+set(LLVM_OPTIONAL_SOURCES ClangTidyMain.cpp ClangTidyToolMain.cpp)
+
+add_clang_library(clangTidyMain STATIC
   ClangTidyMain.cpp
+
+  LINK_LIBS
+  clangTidy
+  ${ALL_CLANG_TIDY_CHECKS}
+
+  DEPENDS
+  omp_gen
+  ClangDriverOptions
   )
 
-target_link_libraries(O2codecheck
+clang_target_link_libraries(clangTidyMain
   PRIVATE
   clangAST
   clangASTMatchers
   clangBasic
-  clangTidy
-
-  # link our own checks
-  clangTidyAliceO2Module
-  clangTidyReportingModule
-
-  # include checkers available from main clang-tidy
-  clangTidyAlteraModule
-  clangTidyAndroidModule
-  clangTidyAbseilModule
-  clangTidyBoostModule
-  clangTidyBugproneModule
-  clangTidyCERTModule
-  clangTidyConcurrencyModule
-  clangTidyCppCoreGuidelinesModule
-  clangTidyDarwinModule
-  clangTidyFuchsiaModule
-  clangTidyGoogleModule
-  clangTidyHICPPModule
-  clangTidyLinuxKernelModule
-  clangTidyLLVMModule
-  clangTidyLLVMLibcModule
-  clangTidyMiscModule
-  clangTidyModernizeModule
-  clangTidyMPIModule
-  clangTidyObjCModule
-  clangTidyOpenMPModule
-  clangTidyPerformanceModule
-  clangTidyPortabilityModule
-  clangTidyReadabilityModule
-  clangTidyZirconModule
   clangTooling
   clangToolingCore
   )
 
-install(TARGETS O2codecheck
-  RUNTIME DESTINATION bin)
+# Support plugins.
+if(CLANG_PLUGIN_SUPPORT)
+  set(support_plugins SUPPORT_PLUGINS)
+endif()
 
-#install(PROGRAMS clang-tidy-diff.py DESTINATION share/clang)
-install(PROGRAMS run_O2CodeChecker.py DESTINATION bin)
+add_clang_tool(clang-tidy
+  ClangTidyToolMain.cpp
 
-# we need to install the builtin headers in a path which is searched by the tool
-# FIXME: a soft link would be better
-string(REPLACE "." ";" LLVM_PACKAGE_VERSION_LIST ${LLVM_PACKAGE_VERSION})
-list(GET LLVM_PACKAGE_VERSION_LIST 0 LLVM_PACKAGE_VERSION_MAJOR)
-install(DIRECTORY ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION_MAJOR}/include DESTINATION lib/clang/${LLVM_PACKAGE_VERSION_MAJOR})
+  DEPENDS
+  clang-resource-headers
+  ${support_plugins}
+  )
+clang_target_link_libraries(clang-tidy
+  PRIVATE
+  clangAST
+  clangASTMatchers
+  clangBasic
+  clangTooling
+  clangToolingCore
+  )
+target_link_libraries(clang-tidy
+  PRIVATE
+  clangTidy
+  clangTidyMain
+  ${ALL_CLANG_TIDY_CHECKS}
+  )
 
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  # On MacOS we need to do the same with C++ headers since they are in a non-standard location
-  # (alternative would be to set the CPATH environment variable)
-  INSTALL(CODE "execute_process(COMMAND mkdir ${CMAKE_INSTALL_PREFIX}/include)")
-  INSTALL(CODE "execute_process(COMMAND ln -sf \
-      /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++ \
-      ${CMAKE_INSTALL_PREFIX}/include/c++)")
-ENDIF()
+if(CLANG_PLUGIN_SUPPORT)
+  export_executable_symbols_for_plugins(clang-tidy)
+endif()
+
+install(PROGRAMS clang-tidy-diff.py
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/clang"
+  COMPONENT clang-tidy)
+install(PROGRAMS run-clang-tidy.py
+  DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  COMPONENT clang-tidy
+  RENAME run-clang-tidy)
