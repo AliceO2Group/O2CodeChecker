@@ -77,8 +77,8 @@ def get_tidy_invocation(f, clang_tidy_binary, checks, warningsAsErrors, tmpdir, 
     start.append('-warnings-as-errors=' + warningsAsErrors)
   if config:
     start.append('-config=' + config)
-  if extra_args is not None:
-    start.append(extra_args)
+  for extra in extra_args:
+    start.append(extra)
   if tmpdir is not None:
     start.append('-export-fixes')
     # Get a temporary file. We immediately close the handle so clang-tidy can
@@ -152,6 +152,8 @@ def main():
   args = parser.parse_args()
 
   db_path = 'compile_commands.json'
+  if args.extra_args:
+    args.extra_args = args.extra_args.split(" ")
 
   if args.build_path is not None:
     build_path = args.build_path
