@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.16)
 enable_testing()
 
 project(O2CodeChecker)
