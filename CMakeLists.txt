@@ -1,7 +1,13 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 4.0)
 enable_testing()
 
 project(O2CodeChecker)
+
+# LLVM's installed HandleLLVMOptions.cmake sets no C++ standard, so without this
+# we inherit whatever the compiler defaults to -- C++14 on Apple clang, which is
+# not enough for the clang-tidy headers.
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # find clang + llvm
 find_package(Clang REQUIRED CONFIG)
