@@ -9,7 +9,14 @@
 
 #include "clang-tidy/ClangTidy.h"
 #include "clang-tidy/ClangTidyModule.h"
+// Up to Clang 21 ClangTidyModuleRegistry was declared only in
+// ClangTidyModuleRegistry.h. Clang 22 moved it into ClangTidyModule.h above and
+// left the old header behind as a bare #warning, to be deleted in Clang 24 --
+// so __has_include() would keep including it, and keep warning, on 22 and 23.
+#include "llvm/Config/llvm-config.h"
+#if LLVM_VERSION_MAJOR < 22
 #include "clang-tidy/ClangTidyModuleRegistry.h"
+#endif
 #include "MemberNamesCheck.h"
 #include "NamespaceNamingCheck.h"
 #include "SizeofCheck.h"
