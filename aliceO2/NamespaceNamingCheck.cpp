@@ -11,6 +11,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchersMacros.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "llvm/Config/llvm-config.h"   // LLVM_VERSION_MAJOR
 #include <regex>
 #include <string>
 #include <ctype.h>
@@ -98,7 +99,23 @@ void NamespaceNamingCheck::check(const MatchFinder::MatchResult &Result) {
   const auto *MatchedNamespaceLoc = Result.Nodes.getNodeAs<NestedNameSpecifierLoc>("namespace-usage");
   if( MatchedNamespaceLoc )
   {
-    const auto *AsNamespace = MatchedNamespaceLoc->getNestedNameSpecifier()->getAsNamespace();
+#if LLVM_VERSION_MAJOR >= 22
+    // Clang 22 turned NestedNameSpecifier into a value type and removed
+    // getAsNamespace(); the namespace is now reached through
+    // getAsNamespaceAndPrefix(), which is llvm_unreachable() unless the
+    // specifier really designates one. The matcher below only binds
+    // specifiesNamespace(), but check the kind rather than trust that. It also
+    // yields a NamespaceBaseDecl, the new common base of NamespaceDecl and
+    // NamespaceAliasDecl; both are NamedDecl, which is all we use below.
+    const NestedNameSpecifier Qualifier = MatchedNamespaceLoc->getNestedNameSpecifier();
+    if( Qualifier.getKind() != NestedNameSpecifier::Kind::Namespace )
+    {
+      return;
+    }
+    const NamespaceBaseDecl *AsNamespace = Qualifier.getAsNamespaceAndPrefix().Namespace;
+#else
+    const NamespaceDecl *AsNamespace = MatchedNamespaceLoc->getNestedNameSpecifier()->getAsNamespace();
+#endif
     if( isOutsideOfTargetScope( Result.SourceManager->getFilename(AsNamespace->getLocation()).str() ) )
     {
       return;
