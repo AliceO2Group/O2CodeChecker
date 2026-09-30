@@ -102,14 +102,20 @@ def apply_fixes(args, tmpdir):
   shutil.rmtree(tmpdir)
 
 
-def run_tidy(args, tmpdir, build_path, queue):
+def run_tidy(args, tmpdir, build_path, queue, lock):
   """Takes filenames out of queue and runs clang-tidy on them."""
   while True:
     name = queue.get()
     invocation = get_tidy_invocation(name, args.clang_tidy_binary, args.checks, args.warningsAsErrors,
                                      tmpdir, build_path, args.header_filter, args.config, args.extra_args)
-    sys.stdout.write(' '.join(invocation) + '\n')
-    subprocess.call(invocation)
+    proc = subprocess.Popen(invocation, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = proc.communicate()[0]
+    # Print the command and its output in one piece; concurrent writes to sys.stdout
+    # from several threads can corrupt it (e.g. NUL bytes with Python 3.9/3.10).
+    with lock:
+      sys.stdout.write(' '.join(invocation) + '\n')
+      sys.stdout.write(output.decode('utf-8', 'replace'))
+      sys.stdout.flush()
     queue.task_done()
 
 
@@ -192,9 +198,10 @@ def main():
   try:
     # Spin up a bunch of tidy-launching threads.
     queue = Queue.Queue(max_task)
+    lock = threading.Lock()
     for _ in range(max_task):
       t = threading.Thread(target=run_tidy,
-                           args=(args, tmpdir, build_path, queue))
+                           args=(args, tmpdir, build_path, queue, lock))
       t.daemon = True
       t.start()
 
